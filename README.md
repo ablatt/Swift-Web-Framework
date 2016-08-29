@@ -2,7 +2,7 @@
 An easy to use web framework written in Swift. A work in progress...
 
 # Example usage
-
+'''
 let h = HTTPServer();
 
 h.addGETRoute("/", callback: { (request: ClientObject) -> String in
@@ -16,3 +16,4 @@ h.addGETRoute("/test", callback: { (request: ClientObject) -> String in
 });
 
 h.startServer(onPort: 9000);
+'''
