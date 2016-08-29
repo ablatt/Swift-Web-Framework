@@ -24,6 +24,9 @@ class HTTPServer : NSObject {
     // list of connected clients
     private var clients = Dictionary<Int32, ClientObject>();
     
+    // table to temporarily hold incoming requests
+    private var tempReqTable = Dictionary<Int32, String>();
+    
     // queue of clients to send responses to
     private var responseQueue = Queue<Int32>();
     
@@ -105,7 +108,7 @@ class HTTPServer : NSObject {
                 self.responseQueue.enqueue(clientDescriptor);
             });
         default: break
-            
+           //TODO: Add more HTTP method handlers
         }
 
     }
@@ -218,7 +221,7 @@ class HTTPServer : NSObject {
             }
         
             // send response in dedicated send thread
-         //   dispatch_async(sendThread, {
+            dispatch_async(sendThread, {
                 guard send(fd, response.cStringUsingEncoding(NSUTF8StringEncoding)!, response.lengthOfBytesUsingEncoding(NSUTF8StringEncoding), 0) > 0 else {
                     print("failed to send response")
                     return;
@@ -226,7 +229,7 @@ class HTTPServer : NSObject {
                 
                 // if connection type is keep-alive, don't close the connection
                 close(fd);
-          //  });
+            });
         }
     }
     
@@ -285,7 +288,7 @@ class HTTPServer : NSObject {
                         }
                     } else if Int32(kEventList[i].filter) == EVFILT_READ {  // read from client
                         // TODO: Must handle cases where not all packets of header are received in one go
-                        let recvBuf = [UInt8](count: 4096, repeatedValue: 0);
+                        let recvBuf = [UInt8](count: 512, repeatedValue: 0);
                         let clientDesc = Int32(kEventList[i].ident);
                         var numBytes = 0;
                         numBytes = recv(clientDesc, UnsafeMutablePointer<Void>(recvBuf), recvBuf.count, 0);
@@ -301,8 +304,27 @@ class HTTPServer : NSObject {
                                 return;
                         }
                         
-                        // process the request
-                        self.processRequest(request, onSocket: clientDesc);
+                        // add to temporary request table
+                        if self.tempReqTable[clientDesc] != nil {
+                            self.tempReqTable[clientDesc]!.appendContentsOf(request);
+                        } else {
+                            self.tempReqTable[clientDesc] = request;
+                        }
+                        
+                        // check if received request contains '\r\n' for end of header
+                        if self.tempReqTable[clientDesc]!.rangeOfString("\r\n\r\n") != nil {
+                            let range = self.tempReqTable[clientDesc]!.rangeOfString("\r\n\r\n");
+                            
+                            //TODO: If POST request, should check if chunked-encoding or content-length is specified
+
+                            // process the request
+                            self.processRequest(self.tempReqTable[clientDesc]!, onSocket: clientDesc);
+                            
+                            // remove request from temp table
+                            self.tempReqTable[clientDesc] = nil;
+                        } else {
+                            print("***Received only partial request***");
+                        }
                     } else if Int32(kEventList[i].flags) == EV_EOF {
                         close(Int32(kEventList[i].ident));
                         print("closed file descriptor \(kEventList[i].ident)");

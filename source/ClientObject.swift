@@ -12,7 +12,7 @@ class ClientObject {
     var requestHeader = Dictionary<String, String>();       // dictionary of header values
     var requestBody:String?                                 // body of the request
     var formData:Dictionary<String, String>?                // form data if POST request
-    var response:String?                                    // response to send to client
+    var response:String?                             // response to send to client
     
     init () {
         self.requestBody = nil;
