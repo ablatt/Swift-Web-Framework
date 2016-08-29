@@ -12,16 +12,13 @@
 		CEAA0D031D6D5FAD00CF56EE /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFE1D6D5FAD00CF56EE /* main.swift */; };
 		CEAA0D041D6D5FAD00CF56EE /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */; };
 		CEAA0D051D6D5FAD00CF56EE /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0D001D6D5FAD00CF56EE /* Utility.swift */; };
-		CEE1FF841D6F47C1009048E0 /* RequestObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE1FF831D6F47C1009048E0 /* RequestObject.swift */; };
-		CEE1FF861D7015F6009048E0 /* ResponseObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE1FF851D7015F6009048E0 /* ResponseObject.swift */; };
 		CEE1FF8F1D7088EC009048E0 /* Swift Web Framework.h in Headers */ = {isa = PBXBuildFile; fileRef = CEE1FF8E1D7088EC009048E0 /* Swift Web Framework.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		CEE1FF941D7088F5009048E0 /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */; };
-		CEE1FF951D7088F5009048E0 /* RequestObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE1FF831D6F47C1009048E0 /* RequestObject.swift */; };
 		CEE1FF961D7088F5009048E0 /* HTTPServerExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFD1D6D5FAD00CF56EE /* HTTPServerExtension.swift */; };
 		CEE1FF971D7088F5009048E0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFE1D6D5FAD00CF56EE /* main.swift */; };
 		CEE1FF981D7088F5009048E0 /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */; };
 		CEE1FF991D7088F5009048E0 /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0D001D6D5FAD00CF56EE /* Utility.swift */; };
-		CEE1FF9A1D7088F5009048E0 /* ResponseObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE1FF851D7015F6009048E0 /* ResponseObject.swift */; };
+		CEFC07C61D749CA400A3FB6D /* ClientObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFC07C51D749CA400A3FB6D /* ClientObject.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,11 +40,10 @@
 		CEAA0CFE1D6D5FAD00CF56EE /* main.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = main.swift; path = source/main.swift; sourceTree = SOURCE_ROOT; };
 		CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Queue.swift; path = source/Queue.swift; sourceTree = SOURCE_ROOT; };
 		CEAA0D001D6D5FAD00CF56EE /* Utility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Utility.swift; path = source/Utility.swift; sourceTree = SOURCE_ROOT; };
-		CEE1FF831D6F47C1009048E0 /* RequestObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RequestObject.swift; sourceTree = "<group>"; };
-		CEE1FF851D7015F6009048E0 /* ResponseObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResponseObject.swift; sourceTree = "<group>"; };
 		CEE1FF8C1D7088EC009048E0 /* Swift Web Framework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = "Swift Web Framework.framework"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEE1FF8E1D7088EC009048E0 /* Swift Web Framework.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Swift Web Framework.h"; sourceTree = "<group>"; };
 		CEE1FF901D7088EC009048E0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CEFC07C51D749CA400A3FB6D /* ClientObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClientObject.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,13 +85,12 @@
 		CE2AA0281D6A0B3900F918B4 /* source */ = {
 			isa = PBXGroup;
 			children = (
+				CEFC07C51D749CA400A3FB6D /* ClientObject.swift */,
 				CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */,
-				CEE1FF831D6F47C1009048E0 /* RequestObject.swift */,
 				CEAA0CFD1D6D5FAD00CF56EE /* HTTPServerExtension.swift */,
 				CEAA0CFE1D6D5FAD00CF56EE /* main.swift */,
 				CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */,
 				CEAA0D001D6D5FAD00CF56EE /* Utility.swift */,
-				CEE1FF851D7015F6009048E0 /* ResponseObject.swift */,
 			);
 			path = source;
 			sourceTree = "<group>";
@@ -209,9 +204,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CEE1FF861D7015F6009048E0 /* ResponseObject.swift in Sources */,
 				CEAA0D051D6D5FAD00CF56EE /* Utility.swift in Sources */,
-				CEE1FF841D6F47C1009048E0 /* RequestObject.swift in Sources */,
+				CEFC07C61D749CA400A3FB6D /* ClientObject.swift in Sources */,
 				CEAA0D021D6D5FAD00CF56EE /* HTTPServerExtension.swift in Sources */,
 				CEAA0D011D6D5FAD00CF56EE /* HTTPServer.swift in Sources */,
 				CEAA0D031D6D5FAD00CF56EE /* main.swift in Sources */,
@@ -224,12 +218,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEE1FF941D7088F5009048E0 /* HTTPServer.swift in Sources */,
-				CEE1FF951D7088F5009048E0 /* RequestObject.swift in Sources */,
 				CEE1FF961D7088F5009048E0 /* HTTPServerExtension.swift in Sources */,
 				CEE1FF971D7088F5009048E0 /* main.swift in Sources */,
 				CEE1FF981D7088F5009048E0 /* Queue.swift in Sources */,
 				CEE1FF991D7088F5009048E0 /* Utility.swift in Sources */,
-				CEE1FF9A1D7088F5009048E0 /* ResponseObject.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -407,6 +399,7 @@
 				CEE1FF931D7088EC009048E0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
