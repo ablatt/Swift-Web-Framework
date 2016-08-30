@@ -33,6 +33,7 @@ class HTTPServer : NSObject {
     private var clientThread = dispatch_queue_create("http.client.thread", DISPATCH_QUEUE_SERIAL);           // serial queue to handle client requests
     private var sendThread = dispatch_queue_create("http.response.thread", DISPATCH_QUEUE_CONCURRENT);       // serial queue to send response to clients
 
+//MARK: Initializers
     override init () {
         statusCodeHandler["400"] = {(request: ClientObject) -> String in
             return "400 - Bad Request\n";
@@ -46,7 +47,7 @@ class HTTPServer : NSObject {
     /**
         Schedule error response
      */
-    private func scheduleStatusCodeResponse(withErrorCode errorCode:String, forClient clientDescriptor:Int32) {
+    private func scheduleStatusCodeResponse(withStatusCode errorCode:String, forClient clientDescriptor:Int32) {
         guard let client = clients[clientDescriptor] else {
             print("error: client wasn't stored in clients table.");
             return;
@@ -84,7 +85,7 @@ class HTTPServer : NSObject {
         switch client.requestHeader["METHOD"]! {
         case "GET":
             guard let callback = GETRoutes[URI] else {
-                scheduleStatusCodeResponse(withErrorCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
                 return;
             }
             
@@ -95,7 +96,7 @@ class HTTPServer : NSObject {
             });
         case "POST":
             guard let callback = POSTRoutes[URI] else {
-                scheduleStatusCodeResponse(withErrorCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
                 return;
             }
             
@@ -171,7 +172,7 @@ class HTTPServer : NSObject {
         
         guard var contentLength = client.requestHeader["Content-Length"] else {
             print("can't fetch content length");
-            scheduleStatusCodeResponse(withErrorCode: "400", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDescriptor);
             return false;
         }
         
@@ -180,7 +181,7 @@ class HTTPServer : NSObject {
         contentLength = contentLength.stringByReplacingOccurrencesOfString(" ", withString: "");
         guard let bodySize = Int(contentLength) else {
             print("Content-Length header not found");
-            scheduleStatusCodeResponse(withErrorCode: "400", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDescriptor);
             return false;
         }
         
@@ -205,7 +206,6 @@ class HTTPServer : NSObject {
         Process request header from client
      */
     private func processRequest(request: String, onSocket clientDescriptor: Int32) {
-        print(request);
         var client:ClientObject!;
         if clients[clientDescriptor] == nil {
             client = ClientObject();
@@ -225,7 +225,7 @@ class HTTPServer : NSObject {
         let lines = request.componentsSeparatedByString("\n");
         var tokens = lines[0].componentsSeparatedByString(" ");
         guard tokens.count >= 2 else {
-            scheduleStatusCodeResponse(withErrorCode: "400", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDescriptor);
             return;
         }
         
@@ -274,7 +274,7 @@ class HTTPServer : NSObject {
         // validate request header
         guard validateRequestHeader(client) else {
             print("Invalid request header");
-            scheduleStatusCodeResponse(withErrorCode: "400", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDescriptor);
             return;
         }
         
@@ -288,7 +288,7 @@ class HTTPServer : NSObject {
     /**
         Timed function that attempts to send responses dispatched in a serial queue
      */
-    func sendResponse(timer:NSTimer!) {
+    @objc private func sendResponse(timer:NSTimer!) {
         while self.responseQueue.empty() == false {
             guard let fd = self.responseQueue.dequeue() else {
                 print("response not set for client");
@@ -376,49 +376,56 @@ class HTTPServer : NSObject {
                             continue;
                         }
                     } else if Int32(kEventList[i].filter) == EVFILT_READ {  // read from client
-                        let recvBuf = [UInt8](count: 512, repeatedValue: 0);
-                        let clientDesc = Int32(kEventList[i].ident);
-                        var numBytes = 0;
-                        numBytes = recv(clientDesc, UnsafeMutablePointer<Void>(recvBuf), recvBuf.count, 0);
-                        guard numBytes >= 0 else {
-                            perror("recv");
-                            continue;
-                        }
-
-                        // convert from c-string to String type the
-                        guard let request =  String.fromCString(UnsafeMutablePointer<CChar>(recvBuf))
-                            else {
-                                print("failed to convert request to String");
+                        // lock critical section of reading and converting buff to string
+                        let lockQueue = dispatch_queue_create("httpserver.lock", nil);
+                        dispatch_sync(lockQueue, {
+                            let recvBuf = [UInt8](count: 256, repeatedValue: 0);
+                            let clientDesc = Int32(kEventList[i].ident);
+                            var numBytes = 0;
+                            numBytes = recv(clientDesc, UnsafeMutablePointer<Void>(recvBuf), recvBuf.count, 0);
+                            guard numBytes >= 0 else {
+                                perror("recv");
                                 return;
-                        }
-                        
-                        //TODO: DO we need to remove from kqueue? kevent keeps returning
-                        // add to temporary request table
-                        if partialReqTable[clientDesc] != nil {
-                            partialReqTable[clientDesc]!.appendContentsOf(request);
-                        } else {
-                            partialReqTable[clientDesc] = request;
-                        }
-                        
-                        // if in clients table, the header has already been processed and this recv returns a message body
-                        if self.clients[clientDesc] != nil && self.clients[clientDesc]!.requestHeader["METHOD"] == "POST" {
-                            let lines = request.componentsSeparatedByString("\n");
-                            
-                            // if full body has been set, schedule a response
-                            if self.processBody(lines, forClient: clientDesc) {
-                                self.scheduleResponse(withDescriptor: clientDesc);
+                            }
+
+                            // convert from c-string to String type the
+                            guard let request =  String.fromCString(UnsafeMutablePointer<CChar>(recvBuf))
+                                else {
+                                    print(recvBuf);
+                                    print("failed to convert request to String");
+                                    
+                                    return;
                             }
                             
-                            partialReqTable[clientDesc] = nil;
-                        } else if partialReqTable[clientDesc]!.rangeOfString("\r\n\r\n") != nil { // end of header is signaled by "\r\n\r\n"
-                            // process the request
-                            self.processRequest(partialReqTable[clientDesc]!, onSocket: clientDesc);
-                            
-                            // remove request from temp table
-                            partialReqTable[clientDesc] = nil;
-                        } else {
-                            print("***Received only partial request***");
-                        }
+                            //TODO: DO we need to remove from kqueue? kevent keeps returning
+                            // add to temporary request table
+                            if partialReqTable[clientDesc] != nil {
+                                partialReqTable[clientDesc]!.appendContentsOf(request);
+                            } else {
+                                partialReqTable[clientDesc] = request;
+                            }
+
+                        
+                            // if in clients table, the header has already been processed and this recv returns a message body
+                            if self.clients[clientDesc] != nil && self.clients[clientDesc]!.requestHeader["METHOD"] == "POST" {
+                                let lines = request.componentsSeparatedByString("\n");
+                                
+                                // if full body has been set, schedule a response
+                                if self.processBody(lines, forClient: clientDesc) {
+                                    self.scheduleResponse(withDescriptor: clientDesc);
+                                }
+                                
+                                partialReqTable[clientDesc] = nil;
+                            } else if partialReqTable[clientDesc]!.rangeOfString("\r\n\r\n") != nil { // end of header is signaled by "\r\n\r\n"
+                                // process the request
+                                self.processRequest(partialReqTable[clientDesc]!, onSocket: clientDesc);
+                                
+                                // remove request from temp table
+                                partialReqTable[clientDesc] = nil;
+                            } else {
+                                print("***Received only partial request***");
+                            }
+                        });
                     } else if Int32(kEventList[i].flags) == EV_EOF {
                         close(Int32(kEventList[i].ident));
                         print("closed file descriptor \(kEventList[i].ident)");

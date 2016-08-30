@@ -14,11 +14,11 @@ typealias MiddlewareClosure = (ClientObject) -> Bool;
 /**
     Utility functions provided by the HTTP server
  */
-protocol HTTPServerExtension {
+protocol HTTPServerUtility {
     func readFile(fileName:String) throws -> [String];
 }
 
-extension HTTPServer: HTTPServerExtension {
+extension HTTPServer: HTTPServerUtility {
     func readFile(fileName:String) throws -> [String] {
         do {
             let contents = try NSFileManager.defaultManager().contentsOfDirectoryAtPath("sdf");
