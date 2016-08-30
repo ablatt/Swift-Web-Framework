@@ -205,6 +205,7 @@ class HTTPServer : NSObject {
         Process request header from client
      */
     private func processRequest(request: String, onSocket clientDescriptor: Int32) {
+        print(request);
         var client:ClientObject!;
         if clients[clientDescriptor] == nil {
             client = ClientObject();
@@ -244,11 +245,15 @@ class HTTPServer : NSObject {
             if client.requestHeader["METHOD"] == "POST" && lines[i] == "\r"{
                 let bodyArr = Array(lines[(i+1)...(lines.count-1)]);
                 
-                // only process if we've received the full body or if chunked-encoding
-                var chunkedEncoding = true;
+                // we can start sending a response of the transfer encoding is chunked-encoding
+                var chunkedEncoding = false;
+                if client.requestHeader["Transfer-Encoding"] != nil &&
+                    client.requestHeader["Transfer-Encoding"] == "chunked" {
+                    chunkedEncoding = true;
+                }
                 
                 // extract form data if the full body is in the request object
-                if processBody(bodyArr, forClient: clientDescriptor) {
+                if processBody(bodyArr, forClient: clientDescriptor) || chunkedEncoding == true {
                     client.formData = parseFormData(FromRequest: lines, startingAtIndex: i+1);
                 } else {
                     sendFlag = false;
