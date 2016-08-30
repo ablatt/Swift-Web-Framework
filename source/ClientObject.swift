@@ -9,7 +9,7 @@
 import Foundation
 
 class ClientObject {
-    var requestHeader = Dictionary<String, String>();       // dictionary of header values
+    var requestHeader:Dictionary<String, String>!;       // dictionary of header values
     var formData:Dictionary<String, String>?                // form data if POST request
     var response:String?                                    // response to send to client
     
@@ -19,7 +19,16 @@ class ClientObject {
     var bodyLength = 0;
     
     init () {
-        self.requestBody = nil;
+        resetData();
+    }
+    
+    // reset the data
+    func resetData() {
+        self.requestHeader = Dictionary<String, String>();
         self.formData = nil;
+        self.response = nil;
+        self.bodyStartingIndex = -1;
+        self.requestBody = nil;
+        self.bodyLength = 0;
     }
 }

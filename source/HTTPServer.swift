@@ -31,7 +31,7 @@ class HTTPServer : NSObject {
     // queues to perform units of work
     private var workerThread = dispatch_queue_create("http.worker.thread", DISPATCH_QUEUE_CONCURRENT);       // concurrent queue for processing and work
     private var clientThread = dispatch_queue_create("http.client.thread", DISPATCH_QUEUE_SERIAL);           // serial queue to handle client requests
-    private var sendThread = dispatch_queue_create("http.response.thread", DISPATCH_QUEUE_CONCURRENT);       // serial queue to send response to clients
+    private let lockQueue = dispatch_queue_create("httpserver.lock", nil);
 
 //MARK: Initializers
     override init () {
@@ -206,15 +206,10 @@ class HTTPServer : NSObject {
         Process request header from client
      */
     private func processRequest(request: String, onSocket clientDescriptor: Int32) {
-        var client:ClientObject!;
-        if clients[clientDescriptor] == nil {
-            client = ClientObject();
-        } else {
-            client = clients[clientDescriptor];
+        guard let client =  clients[clientDescriptor] else {
+            print("not in clients table");
+            return;
         }
-        
-        // add to clients table
-        clients[clientDescriptor] = client;
         
         // create the request dictionary to hold HTTP header key and values
         client.requestHeader = Dictionary<String, String>();
@@ -306,14 +301,23 @@ class HTTPServer : NSObject {
             }
         
             // send response in dedicated send thread
-            dispatch_async(sendThread, {
-                guard send(fd, response.cStringUsingEncoding(NSUTF8StringEncoding)!, response.lengthOfBytesUsingEncoding(NSUTF8StringEncoding), 0) > 0 else {
-                    print("failed to send response")
-                    return;
+            dispatch_sync(lockQueue, {
+                let buff = response.cStringUsingEncoding(NSUTF8StringEncoding)!;
+                let numBytes = buff.count;
+                var bytesSent = 0;
+                while bytesSent != numBytes {
+                    let res =  send(fd, response.cStringUsingEncoding(NSUTF8StringEncoding)!, response.lengthOfBytesUsingEncoding(NSUTF8StringEncoding), 0);
+                    guard res >= 0 else {
+                        print("failed to send response")
+                        return;
+                    }
+                    bytesSent += numBytes;
                 }
-                
+                print("Bytes sent: \(bytesSent) / \(numBytes)");
+            
                 // if connection type is keep-alive, don't close the connection
                 close(fd);
+                //self.clients[fd]?.resetData();
                 self.clients[fd] = nil;
             });
         }
@@ -377,23 +381,41 @@ class HTTPServer : NSObject {
                         }
                     } else if Int32(kEventList[i].filter) == EVFILT_READ {  // read from client
                         // lock critical section of reading and converting buff to string
-                        let lockQueue = dispatch_queue_create("httpserver.lock", nil);
-                        dispatch_sync(lockQueue, {
-                            let recvBuf = [UInt8](count: 256, repeatedValue: 0);
+                        dispatch_sync(self.lockQueue, {
+                            let recvBuf = [UInt8](count: 512, repeatedValue: 0);
                             let clientDesc = Int32(kEventList[i].ident);
                             var numBytes = 0;
                             numBytes = recv(clientDesc, UnsafeMutablePointer<Void>(recvBuf), recvBuf.count, 0);
+                            //recvBuf[recvBuf.count-1] = 0;
                             guard numBytes >= 0 else {
                                 perror("recv");
                                 return;
                             }
+                            print("Bytes received: \(numBytes)");
+                            
+                            // client has closed the request of numbytes is 0
+                            if numBytes == 0 {
+                                print("no bytes found, closing");
+                                close(clientDesc);
+                                self.clients[clientDesc] = nil;
+                                return;
+                            }
+                            
+                            var client:ClientObject!;
+                            if self.clients[clientDesc] == nil {
+                                client = ClientObject();
+                            } else {
+                                client = self.clients[clientDesc];
+                            }
+                            
+                            // add to clients table
+                            self.clients[clientDesc] = client;
 
                             // convert from c-string to String type the
-                            guard let request =  String.fromCString(UnsafeMutablePointer<CChar>(recvBuf))
-                                else {
-                                    print(recvBuf);
+                            guard let request = String.fromCStringRepairingIllFormedUTF8(UnsafeMutablePointer<CChar>(recvBuf)).0 else {
+                                    //print(recvBuf);
                                     print("failed to convert request to String");
-                                    
+                                    self.scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDesc);
                                     return;
                             }
                             
