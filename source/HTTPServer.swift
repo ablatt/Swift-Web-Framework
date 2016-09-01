@@ -19,7 +19,7 @@ class HTTPServer : NSObject {
     // dictionaries containing the routes and callbacks
     private var GETRoutes = Dictionary<String, RouteClosure>();
     private var POSTRoutes = Dictionary<String, RouteClosure>();
-    private var statusCodeHandler = Dictionary<String, RouteClosure> ();
+    private var statusCodeHandler = Dictionary<String, StatusCodeClosure> ();
     private var middlewareList = Array<MiddlewareClosure>();
     
     // list of connected clients
@@ -724,23 +724,30 @@ class HTTPServer : NSObject {
     }
 
     /**
-        Adds a HTTP 'GET' route and a function closure to handle a request that matches this route.
+        Adds a HTTP 'GET' route and a function closure to handle a request that matches this route
      */
     func addGETRoute(route:String, callback: RouteClosure) {
         GETRoutes[route] = callback;
     }
     
     /**
-        Adds a HTTP 'POST' route and a function closure to handle a request that matches this route.
+        Adds a HTTP 'POST' route and a function closure to handle a request that matches this route
      */
     func addPOSTRoute(route:String, callback: RouteClosure) {
         POSTRoutes[route] = callback;
     }
     
     /**
-        Adds user defined middleware to process and validate the client request.
+        Adds user defined middleware to process and validate the client request
      */
     func addMiddleware(middleware:MiddlewareClosure) {
         middlewareList.append(middleware);
+    }
+    
+    /**
+        Adds handlers for HTTP status codes
+     */
+    func addStatusCodeHandler(handler:StatusCodeClosure, forStatusCode statusCode:String) {
+        statusCodeHandler[statusCode] = handler;
     }
 }

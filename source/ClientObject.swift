@@ -9,14 +9,14 @@
 import Foundation
 
 class ClientObject {
-    var requestHeader:Dictionary<String, String>!;       // dictionary of request header values
-    var responseHeader:Dictionary<String, String>!;      // dictionary of response header values
+    var requestHeader:Dictionary<String, String>!;          // dictionary of request header values
+    var responseHeader:Dictionary<String, String>!;         // dictionary of response header values
     var formData:Dictionary<String, String>?                // form data if POST request
     var response:String?                                    // response to send to client
     
     // body information
     var bodyStartingIndex = -1;
-    var requestBody:[String]?                                 // body of the request
+    var requestBody:[String]?                               // body of the request
     var bodyLength = 0;
     // TODO: Timestamp
     

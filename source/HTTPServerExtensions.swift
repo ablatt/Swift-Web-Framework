@@ -8,6 +8,7 @@
 
 import Foundation
 
+typealias StatusCodeClosure = (ClientObject) -> String;
 typealias RouteClosure = (ClientObject) -> String;
 typealias MiddlewareClosure = (ClientObject) -> Bool;
 
