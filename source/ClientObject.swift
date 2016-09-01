@@ -9,7 +9,8 @@
 import Foundation
 
 class ClientObject {
-    var requestHeader:Dictionary<String, String>!;       // dictionary of header values
+    var requestHeader:Dictionary<String, String>!;       // dictionary of request header values
+    var responseHeader:Dictionary<String, String>!;      // dictionary of response header values
     var formData:Dictionary<String, String>?                // form data if POST request
     var response:String?                                    // response to send to client
     
@@ -17,6 +18,7 @@ class ClientObject {
     var bodyStartingIndex = -1;
     var requestBody:[String]?                                 // body of the request
     var bodyLength = 0;
+    // TODO: Timestamp
     
     init () {
         resetData();
@@ -24,6 +26,7 @@ class ClientObject {
     
     // reset the data
     func resetData() {
+        self.responseHeader = Dictionary<String, String>();
         self.requestHeader = Dictionary<String, String>();
         self.formData = nil;
         self.response = nil;

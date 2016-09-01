@@ -34,6 +34,9 @@ h.addGETRoute("/post_test_1", callback: { (request: ClientObject) -> String in
 
 h.addPOSTRoute("/after_post", callback: { (request: ClientObject) -> String in
     var page =  "success in serving POST request";
+    guard request.formData != nil else {
+        return "no form detected";
+    }
     for entries in request.formData! {
         print(entries);
     }

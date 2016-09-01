@@ -1,4 +1,4 @@
-//
+    //
 //  HTTPServer.swift
 //  SwiftWebFramework
 //
@@ -25,8 +25,11 @@ class HTTPServer : NSObject {
     // list of connected clients
     private var clients = Dictionary<Int32, ClientObject>();
     
-    // queue of clients to send responses to
+    // queue of connected clients to send responses to
     private var responseQueue = Queue<Int32>();
+    
+    // queue that contains 
+    
     
     // queues to perform units of work
     private var workerThread = dispatch_queue_create("http.worker.thread", DISPATCH_QUEUE_CONCURRENT);       // concurrent queue for processing and work
@@ -58,7 +61,7 @@ class HTTPServer : NSObject {
             client.response = statusCodeHandler["400"]!(client);
             self.responseQueue.enqueue(clientDescriptor);
         case "404":
-            client.response = statusCodeHandler["400"]!(client);
+            client.response = statusCodeHandler["404"]!(client);
             self.responseQueue.enqueue(clientDescriptor);
         default:
             client.response = "Error in request."
@@ -69,7 +72,7 @@ class HTTPServer : NSObject {
     /**
         Schedule the response
      */
-    private func scheduleResponse(withDescriptor clientDescriptor: Int32) {
+    private func createResponse(withDescriptor clientDescriptor: Int32) {
         guard let client = clients[clientDescriptor] else {
             print("error: client wasn't stored in clients table.");
             return;
@@ -91,7 +94,7 @@ class HTTPServer : NSObject {
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             dispatch_async(workerThread, {
-                client.response = callback(client);
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
                 self.responseQueue.enqueue(clientDescriptor);
             });
         case "POST":
@@ -102,7 +105,7 @@ class HTTPServer : NSObject {
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             dispatch_async(workerThread, {
-                client.response = callback(client);
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
                 self.responseQueue.enqueue(clientDescriptor);
             });
         default: break
@@ -112,6 +115,26 @@ class HTTPServer : NSObject {
     }
     
 //MARK: Request and response processing
+    /**
+        Create the response header
+     */
+    func addResponseHeader(response:String, withStatusCode statusCode:String) -> String {
+        // create HTTP-message
+        var header = "HTTP/1.1 ";
+        switch statusCode {
+        case "200":
+            header += statusCode + " OK";
+        default:
+            header += statusCode + " Bad Request";
+        }
+        header += "\r\n";
+        
+         // add Content-Length
+        let numBytes = response.characters.count;
+        header += "Content-Length: \(numBytes)\r\n";
+
+        return header + "\r\n" + response + "\r\n";
+    }
     
     /**
         Validate HTTP header
@@ -137,7 +160,6 @@ class HTTPServer : NSObject {
         // validation ok
         return true;
     }
-    
     
     /**
         Parses out form data from the HTTP POST request
@@ -262,6 +284,10 @@ class HTTPServer : NSObject {
                     client.requestHeader[tokens[0]] = "";
                     continue;
                 }
+                
+                // clean tokens and set to request dictionary in client object
+                tokens[1] = tokens[1].stringByReplacingOccurrencesOfString(" ", withString: "");
+                tokens[1] = tokens[1].stringByReplacingOccurrencesOfString("\r", withString: "");
                 client.requestHeader[tokens[0]] = tokens[1];
             }
         }
@@ -275,7 +301,7 @@ class HTTPServer : NSObject {
         
         // schedule request processing and response
         if sendFlag == true {
-            scheduleResponse(withDescriptor: clientDescriptor);
+            createResponse(withDescriptor: clientDescriptor);
         }
     }
     
@@ -306,19 +332,24 @@ class HTTPServer : NSObject {
                 let numBytes = buff.count;
                 var bytesSent = 0;
                 while bytesSent != numBytes {
-                    let res =  send(fd, response.cStringUsingEncoding(NSUTF8StringEncoding)!, response.lengthOfBytesUsingEncoding(NSUTF8StringEncoding), 0);
+                    let res = send(fd, buff, response.lengthOfBytesUsingEncoding(NSUTF8StringEncoding), MSG_OOB);
                     guard res >= 0 else {
                         print("failed to send response")
                         return;
                     }
                     bytesSent += numBytes;
+                    fsync(fd);
                 }
                 print("Bytes sent: \(bytesSent) / \(numBytes)");
-            
+                
                 // if connection type is keep-alive, don't close the connection
-                close(fd);
-                //self.clients[fd]?.resetData();
-                self.clients[fd] = nil;
+                guard let keepAlive = self.clients[fd]?.requestHeader["Connection"] where
+                        keepAlive == "keep-alive" else {
+                    print("keep-alive is not detected");
+                    close(fd);
+                    self.clients[fd] = nil;
+                    return;
+                }
             });
         }
     }
@@ -347,15 +378,17 @@ class HTTPServer : NSObject {
         // begin accepting and receiving clients
         dispatch_async(clientThread, {
             repeat {
+                // lock critical section of reading and converting buff to string
+                dispatch_sync(self.lockQueue, {
                 // get kernel events
                 let numEvents = kevent(kq, nil, 0, &kEventList, Int32(KQUEUE_MAX_EVENTS), &kTimeOut);
                 guard numEvents != -1 else {
                     perror("kevent");
-                    continue;
+                    return;
                 }
                 
                 if numEvents == 0 {
-                    continue;
+                    return;
                 }
                 
                 // iterate through all returned kernel events
@@ -380,8 +413,6 @@ class HTTPServer : NSObject {
                             continue;
                         }
                     } else if Int32(kEventList[i].filter) == EVFILT_READ {  // read from client
-                        // lock critical section of reading and converting buff to string
-                        dispatch_sync(self.lockQueue, {
                             let recvBuf = [UInt8](count: 512, repeatedValue: 0);
                             let clientDesc = Int32(kEventList[i].ident);
                             var numBytes = 0;
@@ -401,22 +432,24 @@ class HTTPServer : NSObject {
                                 return;
                             }
                             
+                            // get client object
                             var client:ClientObject!;
                             if self.clients[clientDesc] == nil {
                                 client = ClientObject();
+                                
+                                // add to clients table
+                                self.clients[clientDesc] = client;
                             } else {
                                 client = self.clients[clientDesc];
                             }
                             
-                            // add to clients table
-                            self.clients[clientDesc] = client;
+
 
                             // convert from c-string to String type the
                             guard let request = String.fromCStringRepairingIllFormedUTF8(UnsafeMutablePointer<CChar>(recvBuf)).0 else {
-                                    //print(recvBuf);
-                                    print("failed to convert request to String");
-                                    self.scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDesc);
-                                    return;
+                                print("failed to convert request to String");
+                                self.scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDesc);
+                                return;
                             }
                             
                             //TODO: DO we need to remove from kqueue? kevent keeps returning
@@ -426,7 +459,6 @@ class HTTPServer : NSObject {
                             } else {
                                 partialReqTable[clientDesc] = request;
                             }
-
                         
                             // if in clients table, the header has already been processed and this recv returns a message body
                             if self.clients[clientDesc] != nil && self.clients[clientDesc]!.requestHeader["METHOD"] == "POST" {
@@ -434,7 +466,7 @@ class HTTPServer : NSObject {
                                 
                                 // if full body has been set, schedule a response
                                 if self.processBody(lines, forClient: clientDesc) {
-                                    self.scheduleResponse(withDescriptor: clientDesc);
+                                    self.createResponse(withDescriptor: clientDesc);
                                 }
                                 
                                 partialReqTable[clientDesc] = nil;
@@ -447,7 +479,6 @@ class HTTPServer : NSObject {
                             } else {
                                 print("***Received only partial request***");
                             }
-                        });
                     } else if Int32(kEventList[i].flags) == EV_EOF {
                         close(Int32(kEventList[i].ident));
                         print("closed file descriptor \(kEventList[i].ident)");
@@ -455,6 +486,7 @@ class HTTPServer : NSObject {
                         print("kernel event not recognized... skipping");
                     }
                 }
+            });
             } while true;
         });
 
