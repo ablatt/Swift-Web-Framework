@@ -15,10 +15,20 @@ let KQUEUE_TIMEOUT:Int = 100000;
 let KQUEUE_MAX_EVENTS = 32;
 
 //TODO: need signal handlers
-class HTTPServer : NSObject {
+public class HTTPServer : NSObject {
     // dictionaries containing the routes and callbacks
-    private var GETRoutes = Dictionary<String, RouteClosure>();
-    private var POSTRoutes = Dictionary<String, RouteClosure>();
+    private var GETRoutes = Dictionary<String, RouteClosure>();         // GET
+    private var HEADRoutes = Dictionary<String, RouteClosure>();        // HEAD
+    private var POSTRoutes = Dictionary<String, RouteClosure>();        // POST
+    private var PUTRoutes = Dictionary<String, RouteClosure>();         // PUT
+    //private var DELETERoutes = Dictionary<String, RouteClosure>();      // DELETE
+    private var TRACERoutes = Dictionary<String, RouteClosure>();       // TRACE
+    private var OPTIONSRoutes = Dictionary<String, RouteClosure>();     // OPTIONS
+    //private var CONNECTRoutes = Dictionary<String, RouteClosure>();   // CONNECT
+    //private var PATCHRoutes = Dictionary<String, RouteClosure>();
+    private var HOSTRoutes = Dictionary<String, RouteClosure>();
+    
+    // other callbacks
     private var statusCodeHandler = Dictionary<String, StatusCodeClosure> ();
     private var middlewareList = Array<MiddlewareClosure>();
     
@@ -27,9 +37,6 @@ class HTTPServer : NSObject {
     
     // queue of connected clients to send responses to
     private var responseQueue = Queue<Int32>();
-    
-    // queue that contains 
-    
     
     // queues to perform units of work
     private var workerThread = dispatch_queue_create("http.worker.thread", DISPATCH_QUEUE_CONCURRENT);       // concurrent queue for processing and work
@@ -249,7 +256,8 @@ class HTTPServer : NSObject {
         client.response = statusCodeHandler["400"]!(client);
         self.responseQueue.enqueue(clientDescriptor);
     }
-    
+
+//MARK: Methods to create the response body and header
     /**
         Schedule the response
      */
@@ -278,6 +286,17 @@ class HTTPServer : NSObject {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
                 self.responseQueue.enqueue(clientDescriptor);
             });
+        case "HEAD":
+            guard let callback = HEADRoutes[URI] else {
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                return;
+            }
+            
+            // generate response asynchronously on worker queue and queue the response on scheduler queue
+            dispatch_async(workerThread, {
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
+                self.responseQueue.enqueue(clientDescriptor);
+            });
         case "POST":
             guard let callback = POSTRoutes[URI] else {
                 scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
@@ -295,10 +314,10 @@ class HTTPServer : NSObject {
         
     }
     
-//MARK: Request and response processing
     /**
         Create the response header
      */
+    //TODO: Add more HTTP headers
     func addResponseHeader(response:String, withStatusCode statusCode:String) -> String {
         // create HTTP-message
         var header = "HTTP/1.1 ";
@@ -310,13 +329,14 @@ class HTTPServer : NSObject {
         }
         header += "\r\n";
         
-         // add Content-Length
+        // add Content-Length
         let numBytes = response.characters.count;
         header += "Content-Length: \(numBytes)\r\n";
-
+        
         return header + "\r\n" + response + "\r\n";
     }
     
+//MARK: Parsing and validation
     /**
         Validate HTTP header
      */
@@ -367,7 +387,7 @@ class HTTPServer : NSObject {
     /**
         Special function for processing POST requests
      */
-    private func processBody(lines:[String], forClient clientDescriptor:Int32) -> Bool {
+    private func parseMessageBody(lines:[String], forClient clientDescriptor:Int32) -> Bool {
         guard let client = clients[clientDescriptor] else {
             print("client not found");
             return false;
@@ -408,7 +428,7 @@ class HTTPServer : NSObject {
     /**
         Process request header from client
      */
-    private func processRequest(request: String, onSocket clientDescriptor: Int32) {
+    private func parseRequest(request: String, onSocket clientDescriptor: Int32) {
         guard let client =  clients[clientDescriptor] else {
             print("not in clients table");
             return;
@@ -451,7 +471,7 @@ class HTTPServer : NSObject {
                 }
                 
                 // extract form data if the full body is in the request object
-                if processBody(bodyArr, forClient: clientDescriptor) || chunkedEncoding == true {
+                if parseMessageBody(bodyArr, forClient: clientDescriptor) || chunkedEncoding == true {
                     client.formData = parseFormData(FromRequest: lines, startingAtIndex: i+1);
                 } else {
                     sendFlag = false;
@@ -623,8 +643,6 @@ class HTTPServer : NSObject {
                             } else {
                                 client = self.clients[clientDesc];
                             }
-                            
-
 
                             // convert from c-string to String type the
                             guard let request = String.fromCStringRepairingIllFormedUTF8(UnsafeMutablePointer<CChar>(recvBuf)).0 else {
@@ -646,14 +664,14 @@ class HTTPServer : NSObject {
                                 let lines = request.componentsSeparatedByString("\n");
                                 
                                 // if full body has been set, schedule a response
-                                if self.processBody(lines, forClient: clientDesc) {
+                                if self.parseMessageBody(lines, forClient: clientDesc) {
                                     self.createResponse(withDescriptor: clientDesc);
                                 }
                                 
                                 partialReqTable[clientDesc] = nil;
                             } else if partialReqTable[clientDesc]!.rangeOfString("\r\n\r\n") != nil { // end of header is signaled by "\r\n\r\n"
                                 // process the request
-                                self.processRequest(partialReqTable[clientDesc]!, onSocket: clientDesc);
+                                self.parseRequest(partialReqTable[clientDesc]!, onSocket: clientDesc);
                                 
                                 // remove request from temp table
                                 partialReqTable[clientDesc] = nil;
@@ -724,14 +742,21 @@ class HTTPServer : NSObject {
     }
 
     /**
-        Adds a HTTP 'GET' route and a function closure to handle a request that matches this route
+        Adds a callback to handle the specified GET route
      */
     func addGETRoute(route:String, callback: RouteClosure) {
         GETRoutes[route] = callback;
     }
     
     /**
-        Adds a HTTP 'POST' route and a function closure to handle a request that matches this route
+        Adds a callback to handle the specified HEAD route
+     */
+    func addHEADRoute(route:String, callback: RouteClosure) {
+        HEADRoutes[route] = callback;
+    }
+    
+    /**
+        Adds a callback to handle the specified POST route
      */
     func addPOSTRoute(route:String, callback: RouteClosure) {
         POSTRoutes[route] = callback;
@@ -749,5 +774,12 @@ class HTTPServer : NSObject {
      */
     func addStatusCodeHandler(handler:StatusCodeClosure, forStatusCode statusCode:String) {
         statusCodeHandler[statusCode] = handler;
+    }
+    
+    /**
+        Adds handler for Hosts request header
+     */
+    func addHostHandler(forHost host:String, callback:RouteClosure) {
+        HOSTRoutes[host] = callback;
     }
 }
