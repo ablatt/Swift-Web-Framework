@@ -2,7 +2,7 @@
 * Easy to use web framework written in Swift.  
 * Unifies iOS app development and backend development under a single language, Swift  
 * Can easily integrate Apple services (that expose a Swift API) into backend (Ads, subscriptions, etc...)   
-* A work in progress...
+* A work in progress. Open to those who want to contribute!
 
 # Example usage
 let h = HTTPServer();  
