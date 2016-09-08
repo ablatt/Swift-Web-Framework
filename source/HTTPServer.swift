@@ -333,6 +333,8 @@ public class HTTPServer : NSObject {
         let numBytes = response.characters.count;
         header += "Content-Length: \(numBytes)\r\n";
         
+        // add t    im
+        
         return header + "\r\n" + response + "\r\n";
     }
     
