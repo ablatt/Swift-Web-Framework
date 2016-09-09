@@ -2,7 +2,7 @@
 * Easy to use web framework written in Swift
 * Unifies iOS app development and backend development under a single language, Swift 
 * Can easily integrate Apple services (that expose a Swift API) into the backend (Ads, Subscriptions, Apple Pay, etc...)
-* Promotes Swift as a primary developer language (since much modern software engineering is really backend development)
+* Promotes Swift as a primary developer language (since a lot of modern software engineering is really backend development)
 * A work in progress. Open to those who want to contribute!
 * Check out DesignDoc.md for a more detailed overview and how to get started!
 
