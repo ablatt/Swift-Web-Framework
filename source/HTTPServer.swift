@@ -13,7 +13,8 @@ import Darwin
 let MAX_CONNECTIONS:Int32 = 1000
 let KQUEUE_TIMEOUT:Int = 100000;
 let KQUEUE_MAX_EVENTS = 32;
-
+let POLL_TIME = 0.00005;
+    
 //TODO: need signal handlers
 public class HTTPServer : NSObject {
     // dictionaries containing the routes and callbacks
@@ -32,16 +33,25 @@ public class HTTPServer : NSObject {
     private var statusCodeHandler = Dictionary<String, StatusCodeClosure> ();
     private var middlewareList = Array<MiddlewareClosure>();
     
+    
+    // queues to perform units of work
+    private var workerThread = dispatch_queue_create("http.worker.thread", DISPATCH_QUEUE_CONCURRENT);       // concurrent queue for processing and work
+    private var clientThread = dispatch_queue_create("http.client.thread", DISPATCH_QUEUE_SERIAL);           // serial queue to handle client requests
+    private let lockQueue = dispatch_queue_create("httpserver.lock", nil);
+
     // list of connected clients
     private var clients = Dictionary<Int32, ClientObject>();
     
     // queue of connected clients to send responses to
     private var responseQueue = Queue<Int32>();
     
-    // queues to perform units of work
-    private var workerThread = dispatch_queue_create("http.worker.thread", DISPATCH_QUEUE_CONCURRENT);       // concurrent queue for processing and work
-    private var clientThread = dispatch_queue_create("http.client.thread", DISPATCH_QUEUE_SERIAL);           // serial queue to handle client requests
-    private let lockQueue = dispatch_queue_create("httpserver.lock", nil);
+    // socket variables
+    var kq:Int32 = -1;                  // kernel queue descriptor
+    var serverSock:Int32 = 0;             // server socket
+    
+    // table to temporarily hold incoming requests
+    var partialReqTable = Dictionary<Int32, String>();
+    
 
 //MARK: Initializers
     override init () {
@@ -333,7 +343,7 @@ public class HTTPServer : NSObject {
         let numBytes = response.characters.count;
         header += "Content-Length: \(numBytes)\r\n";
         
-        // add t    im
+        // add time header
         
         return header + "\r\n" + response + "\r\n";
     }
@@ -557,140 +567,136 @@ public class HTTPServer : NSObject {
         }
     }
     
-    private func startSeverEventLoop(onServerSock serverSock:Int32) {
-        // get descriptor to kernel queue
-        let kq = kqueue();
-        
-        // set kernel to listen to socket events
-        var kEvent = createKernelEvent(withDescriptor: serverSock);
-        guard kevent(kq, &kEvent, 1, nil, 0, nil) != -1 else {
-            perror("kevent");
-            return;
-        }
+    @objc private func serverEventLoop(onServerSock serverSock:Int32) {
+        // create array to store returned kevents
+        var kEventList = Array(count: KQUEUE_MAX_EVENTS, repeatedValue:kevent());
         
         // create timeout to get a kevent (in nanoseconds)
         var kTimeOut = timespec();
         kTimeOut.tv_nsec = KQUEUE_TIMEOUT;
-        
-        // create array to store returned kevents
-        var kEventList = Array(count: KQUEUE_MAX_EVENTS, repeatedValue:kevent());
-        
-        // table to temporarily hold incoming requests
-        var partialReqTable = Dictionary<Int32, String>();
-        
-        // begin accepting and receiving clients
-        dispatch_async(clientThread, {
-            repeat {
-                // lock critical section of reading and converting buff to string
-                dispatch_sync(self.lockQueue, {
-                // get kernel events
-                let numEvents = kevent(kq, nil, 0, &kEventList, Int32(KQUEUE_MAX_EVENTS), &kTimeOut);
-                guard numEvents != -1 else {
-                    perror("kevent");
-                    return;
-                }
-                
-                if numEvents == 0 {
-                    return;
-                }
-                
-                // iterate through all returned kernel events
-                for i in 0...Int(numEvents - 1) {
-                    // check if kevent is on socket fd
-                    if kEventList[i].ident == UInt(serverSock) {
-                        // accept incoming connection
-                        var clientSock:Int32 = -1;
-                        var clientInfo = sockaddr();
-                        var clientInfoSize = socklen_t(sizeof(sockaddr));
-                        clientSock = accept(serverSock, &clientInfo, &clientInfoSize);
-                        guard clientSock > 0 else {
-                            perror("accept");
-                            continue;
-                        }
-                        
-                        // register new client socket with kqueue for reading
-                        kEvent = createKernelEvent(withDescriptor: clientSock);
-                        guard kevent(kq, &kEvent, 1, nil, 0, nil) != -1 else {
-                            perror("kevent");
-                            close(clientSock);
-                            continue;
-                        }
-                    } else if Int32(kEventList[i].filter) == EVFILT_READ {  // read from client
-                            let recvBuf = [UInt8](count: 512, repeatedValue: 0);
-                            let clientDesc = Int32(kEventList[i].ident);
-                            var numBytes = 0;
-                            numBytes = recv(clientDesc, UnsafeMutablePointer<Void>(recvBuf), recvBuf.count, 0);
-                            //recvBuf[recvBuf.count-1] = 0;
-                            guard numBytes >= 0 else {
-                                perror("recv");
-                                return;
-                            }
-                            print("Bytes received: \(numBytes)");
-                            
-                            // client has closed the request of numbytes is 0
-                            if numBytes == 0 {
-                                print("no bytes found, closing");
-                                close(clientDesc);
-                                self.clients[clientDesc] = nil;
-                                return;
-                            }
-                            
-                            // get client object
-                            var client:ClientObject!;
-                            if self.clients[clientDesc] == nil {
-                                client = ClientObject();
-                                
-                                // add to clients table
-                                self.clients[clientDesc] = client;
-                            } else {
-                                client = self.clients[clientDesc];
-                            }
 
-                            // convert from c-string to String type the
-                            guard let request = String.fromCStringRepairingIllFormedUTF8(UnsafeMutablePointer<CChar>(recvBuf)).0 else {
-                                print("failed to convert request to String");
-                                self.scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDesc);
-                                return;
-                            }
-                            
-                            //TODO: DO we need to remove from kqueue? kevent keeps returning
-                            // add to temporary request table
-                            if partialReqTable[clientDesc] != nil {
-                                partialReqTable[clientDesc]!.appendContentsOf(request);
-                            } else {
-                                partialReqTable[clientDesc] = request;
-                            }
-                        
-                            // if in clients table, the header has already been processed and this recv returns a message body
-                            if self.clients[clientDesc] != nil && self.clients[clientDesc]!.requestHeader["METHOD"] == "POST" {
-                                let lines = request.componentsSeparatedByString("\n");
-                                
-                                // if full body has been set, schedule a response
-                                if self.parseMessageBody(lines, forClient: clientDesc) {
-                                    self.createResponse(withDescriptor: clientDesc);
-                                }
-                                
-                                partialReqTable[clientDesc] = nil;
-                            } else if partialReqTable[clientDesc]!.rangeOfString("\r\n\r\n") != nil { // end of header is signaled by "\r\n\r\n"
-                                // process the request
-                                self.parseRequest(partialReqTable[clientDesc]!, onSocket: clientDesc);
-                                
-                                // remove request from temp table
-                                partialReqTable[clientDesc] = nil;
-                            } else {
-                                print("***Received only partial request***");
-                            }
-                    } else if Int32(kEventList[i].flags) == EV_EOF {
-                        close(Int32(kEventList[i].ident));
-                        print("closed file descriptor \(kEventList[i].ident)");
-                    } else {
-                        print("kernel event not recognized... skipping");
+        // lock critical section of reading and converting buff to string
+        dispatch_sync(self.lockQueue, {
+            // get kernel events
+            let numEvents = kevent(self.kq, nil, 0, &kEventList, Int32(KQUEUE_MAX_EVENTS), &kTimeOut);
+            guard numEvents != -1 else {
+                perror("kevent");
+                return;
+            }
+            
+            if numEvents == 0 {
+                return;
+            }
+            
+            // iterate through all returned kernel events
+            for i in 0...Int(numEvents - 1) {
+                // check if kevent is on socket fd
+                if kEventList[i].ident == UInt(self.serverSock) {
+                    // accept incoming connection
+                    var clientSock:Int32 = -1;
+                    var clientInfo = sockaddr();
+                    var clientInfoSize = socklen_t(sizeof(sockaddr));
+                    clientSock = accept(self.serverSock, &clientInfo, &clientInfoSize);
+                    guard clientSock > 0 else {
+                        perror("accept");
+                        continue;
                     }
-                }
-            });
-            } while true;
-        });
+                    
+                    // register new client socket with kqueue for reading
+                    var kEvent = createKernelEvent(withDescriptor: clientSock);
+                    guard kevent(self.kq, &kEvent, 1, nil, 0, nil) != -1 else {
+                        perror("kevent");
+                        close(clientSock);
+                        continue;
+                    }
+                } else if Int32(kEventList[i].filter) == EVFILT_READ {  // read from client
+                        let recvBuf = [UInt8](count: 512, repeatedValue: 0);
+                        let clientDesc = Int32(kEventList[i].ident);
+                        var numBytes = 0;
+                        numBytes = recv(clientDesc, UnsafeMutablePointer<Void>(recvBuf), recvBuf.count, 0);
+                        //recvBuf[recvBuf.count-1] = 0;
+                        guard numBytes >= 0 else {
+                            perror("recv");
+                            return;
+                        }
+                        print("Bytes received: \(numBytes)");
+                        
+                        // client has closed the request of numbytes is 0
+                        if numBytes == 0 {
+                            print("no bytes found, closing");
+                            close(clientDesc);
+                            self.clients[clientDesc] = nil;
+                            return;
+                        }
+                        
+                        // get client object
+                        var client:ClientObject!;
+                        if self.clients[clientDesc] == nil {
+                            client = ClientObject();
+                            
+                            // add to clients table
+                            self.clients[clientDesc] = client;
+                        } else {
+                            client = self.clients[clientDesc];
+                        }
 
+                        // convert from c-string to String type the
+                        guard let request = String.fromCStringRepairingIllFormedUTF8(UnsafeMutablePointer<CChar>(recvBuf)).0 else {
+                            print("failed to convert request to String");
+                            self.scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDesc);
+                            return;
+                        }
+                        
+                        // add to temporary request table
+                        if self.partialReqTable[clientDesc] != nil {
+                            self.partialReqTable[clientDesc]!.appendContentsOf(request);
+                        } else {
+                            self.partialReqTable[clientDesc] = request;
+                        }
+                    
+                        /**
+                                3 Cases for the Received Request:
+                                Case 1: Client object contains request method so header has been processed. Client buffer is part of message body
+                     
+                                Case 2: Client object does not contain request method. Client buffer contains "\r\n\r\n" so a full header can be processed 
+                                        and the request method can be extracted.
+                     
+                                Case 3: Client object does not contain request method. Client buffer does not contain "\r\n\r\n" so we only received a partial header.
+                                        Add the partial message to the partial request table and continue getting data from this client.
+                     
+                        */
+                        // Case 1
+                        if self.clients[clientDesc] != nil && self.clients[clientDesc]!.requestHeader["METHOD"] == "POST" {
+                            let lines = request.componentsSeparatedByString("\n");
+                            
+                            // if full body has been set, schedule a response
+                            if self.parseMessageBody(lines, forClient: clientDesc) {
+                                self.createResponse(withDescriptor: clientDesc);
+                            }
+                            
+                            // remove request from temp table since message body is now stored in client object
+                            self.partialReqTable[clientDesc] = nil;
+                        }
+                        // Case 2
+                        else if self.partialReqTable[clientDesc]!.rangeOfString("\r\n\r\n") != nil {
+                            // process the request
+                            self.parseRequest(self.partialReqTable[clientDesc]!, onSocket: clientDesc);
+                            
+                            // remove request from temp table since message body is now stored in client object
+                            self.partialReqTable[clientDesc] = nil;
+                        }
+                        // Case 3
+                        else {
+                            print("***Received only partial request***");
+                        }
+                } else if Int32(kEventList[i].flags) == EV_EOF {
+                    close(Int32(kEventList[i].ident));
+                    print("closed file descriptor \(kEventList[i].ident)");
+                } else {
+                    print("kernel event not recognized... skipping");
+                }
+            }
+        });
     }
     
 //MARK: Methods exposed to user
@@ -699,12 +705,14 @@ public class HTTPServer : NSObject {
      */
     func startServer(onPort port:in_port_t) {
         // create timer to poll for respones to send
-        let timer = NSTimer(timeInterval: 0.0005, target: self, selector: #selector(self.sendResponse), userInfo: nil, repeats: true);
-        NSRunLoop.mainRunLoop().addTimer(timer, forMode: NSDefaultRunLoopMode)
+        let timer1 = NSTimer(timeInterval: POLL_TIME, target: self, selector: #selector(self.sendResponse), userInfo: nil, repeats: true);
+        let timer2 = NSTimer(timeInterval: POLL_TIME, target: self, selector: #selector(self.serverEventLoop), userInfo: nil, repeats: true);
+        NSRunLoop.currentRunLoop().addTimer(timer1, forMode: NSDefaultRunLoopMode)
+        NSRunLoop.currentRunLoop().addTimer(timer2, forMode: NSDefaultRunLoopMode)
         
         // create a tcp socket
-        let serverSock:Int32 = socket(PF_INET, SOCK_STREAM, 0);
-        guard serverSock > 0 else {
+        self.serverSock = socket(PF_INET, SOCK_STREAM, 0);
+        guard self.serverSock > 0 else {
             perror("socket");
             return;
         }
@@ -717,27 +725,34 @@ public class HTTPServer : NSObject {
         
         // set socket options
         var optVal:Int = 1;
-        guard setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR, &optVal, UInt32(sizeof(Int))) == 0 else {
+        guard setsockopt(self.serverSock, SOL_SOCKET, SO_REUSEADDR, &optVal, UInt32(sizeof(Int))) == 0 else {
             perror("setsockopt");
             return;
         }
         
         // bind socket to local address
-        guard bind(serverSock, sockCast(&sin), socklen_t(sizeof(sockaddr_in))) >= 0 else {
+        guard bind(self.serverSock, sockCast(&sin), socklen_t(sizeof(sockaddr_in))) >= 0 else {
             perror("bind");
             return;
         }
         
+       
         // listen on the socket
-        guard listen(serverSock, MAX_CONNECTIONS) == 0 else {
+        guard listen(self.serverSock, MAX_CONNECTIONS) == 0 else {
             perror("listen");
             return;
         }
-        print("Now listening on port \(port).");
         
         // start event loop for IO multiplexing
-        startSeverEventLoop(onServerSock: serverSock);
-        
+        //serverEventLoop(onServerSock: serverSock);
+        kq = kqueue();
+        var kEvent = createKernelEvent(withDescriptor: serverSock);
+        guard kevent(kq, &kEvent, 1, nil, 0, nil) != -1 else {
+            perror("kevent");
+            return;
+        }
+        print("Now listening on port \(port).");
+
         // since it does not inherit NSApplication, we must manually start the runloop. the runloop will
         // allow the NSTimer to fire continuously and so the client thread can handle requests
         NSRunLoop.mainRunLoop().run();
