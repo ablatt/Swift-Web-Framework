@@ -23,9 +23,9 @@ h.addGETRoute("/post_test_1", callback: { (request: ClientObject) -> String in
     var page =  " <html>" +
                 " <form action=\"after_post\" method=\"post\">" +
                 "   First name:<br> " +
-                "   <input type=\"text\" name=\"firstname\" value=\"Mickey\"><br>" +
+                "   <input type=\"text\" name=\"firstname\" value=\"\"><br>" +
                 "   Last name:<br>" +
-                "   <input type=\"text\" name=\"lastname\" value=\"Mouse\"><br><br>" +
+                "   <input type=\"text\" name=\"lastname\" value=\"\"><br><br>" +
                 "   <input type=\"submit\" value=\"Submit\">" +
                 " </form> "
                 " </html>";
