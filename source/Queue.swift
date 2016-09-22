@@ -32,7 +32,7 @@ class Queue<T> {
         self.size = 0;
     }
     
-    func enqueue(entry: T) {
+    func enqueue(_ entry: T) {
         let newNode = QueueNode<T>(entry);
         if head == nil {
             head = newNode;
