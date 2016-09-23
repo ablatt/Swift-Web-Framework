@@ -11,13 +11,6 @@ import Foundation
 let htons = Int(OSHostByteOrder()) == OSLittleEndian ? _OSSwapInt16 : { $0 }
 
 /**
- Casts from sockaddr_in to sockaddr (&sockaddr_in needs to first be cast to UnsafeMutablePointer<Void> before it can cast to &sockaddr)
- */
-//func sockCast(_ p : UnsafeMutablePointer<sockaddr>) -> UnsafeMutablePointer<sockaddr> {
-//    return UnsafeMutablePointer<sockaddr><sockaddr>(p);
-//}
-
-/**
     Utility function to create a kevent for a kernel queue and file descriptor
  */
 func createKernelEvent(withDescriptor socket:Int32) -> kevent {
