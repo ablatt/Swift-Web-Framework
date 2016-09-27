@@ -498,7 +498,7 @@ open class HTTPServer : NSObject {
                         if self.clientsList[clientDesc] == nil {
                             client = ClientObject();
                             
-                            // add to clients table
+                            // add to clients list
                             self.clientsList[clientDesc] = client;
                             
                             client.fd = clientDesc;
