@@ -18,21 +18,20 @@ let POLL_TIME = 0.00005;
 //TODO: need signal handlers
 open class HTTPServer : NSObject {
     // dictionaries containing the routes and callbacks
-    fileprivate var GETRoutes = Dictionary<String, RouteClosure>();         // GET
-    fileprivate var HEADRoutes = Dictionary<String, RouteClosure>();        // HEAD
-    fileprivate var POSTRoutes = Dictionary<String, RouteClosure>();        // POST
-    fileprivate var PUTRoutes = Dictionary<String, RouteClosure>();         // PUT
-    //private var DELETERoutes = Dictionary<String, RouteClosure>();      // DELETE
-    fileprivate var TRACERoutes = Dictionary<String, RouteClosure>();       // TRACE
-    fileprivate var OPTIONSRoutes = Dictionary<String, RouteClosure>();     // OPTIONS
-    //private var CONNECTRoutes = Dictionary<String, RouteClosure>();   // CONNECT
-    //private var PATCHRoutes = Dictionary<String, RouteClosure>();
+    fileprivate var GETRoutes = Dictionary<String, RouteClosure>();
+    fileprivate var HEADRoutes = Dictionary<String, RouteClosure>();
+    fileprivate var POSTRoutes = Dictionary<String, RouteClosure>();
+    fileprivate var PUTRoutes = Dictionary<String, RouteClosure>();
+    fileprivate var DELETERoutes = Dictionary<String, RouteClosure>();
+    fileprivate var TRACERoutes = Dictionary<String, RouteClosure>();
+    fileprivate var OPTIONSRoutes = Dictionary<String, RouteClosure>();
+    fileprivate var CONNECTRoutes = Dictionary<String, RouteClosure>();
+    fileprivate var PATCHRoutes = Dictionary<String, RouteClosure>();
     fileprivate var HOSTRoutes = Dictionary<String, RouteClosure>();
     
     // other callbacks
     fileprivate var statusCodeHandler = Dictionary<String, StatusCodeClosure> ();
     fileprivate var middlewareList = Array<MiddlewareClosure>();
-    
     
     // queues to perform units of work
     fileprivate var workerThread = DispatchQueue(label: "http.worker.thread", attributes: DispatchQueue.Attributes.concurrent);       // concurrent queue for processing and work
@@ -51,7 +50,6 @@ open class HTTPServer : NSObject {
     
     // table to temporarily hold incoming requests
     var partialReqTable = Dictionary<Int32, String>();
-    
 
 //MARK: Initializers
     override init () {
@@ -271,7 +269,7 @@ open class HTTPServer : NSObject {
     /**
         Schedule the response
      */
-    fileprivate func createResponse(withDescriptor clientDescriptor: Int32) {
+    fileprivate func routeRequest(withDescriptor clientDescriptor: Int32) {
         guard let client = clients[clientDescriptor] else {
             print("error: client wasn't stored in clients table.");
             return;
@@ -286,7 +284,7 @@ open class HTTPServer : NSObject {
         // process each different HTTP method
         switch client.requestHeader["METHOD"]! {
         case "GET":
-            guard let callback = GETRoutes[URI] else {
+             guard let callback = GETRoutes[URI] else {
                 scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
                 return;
             }
@@ -318,10 +316,87 @@ open class HTTPServer : NSObject {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
                 self.responseQueue.enqueue(clientDescriptor);
             });
-        default: break
-            //TODO: Add more HTTP method handlers
+        case "PUT":
+            guard let callback = PUTRoutes[URI] else {
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                return;
+            }
+            
+            // generate response asynchronously on worker queue and queue the response on scheduler queue
+            workerThread.async(execute: {
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
+                self.responseQueue.enqueue(clientDescriptor);
+            });
+        case "DELETE":
+            guard let callback = DELETERoutes[URI] else {
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                return;
+            }
+            
+            // generate response asynchronously on worker queue and queue the response on scheduler queue
+            workerThread.async(execute: {
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
+                self.responseQueue.enqueue(clientDescriptor);
+            });
+        case "TRACE":
+            guard let callback = TRACERoutes[URI] else {
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                return;
+            }
+            
+            // generate response asynchronously on worker queue and queue the response on scheduler queue
+            workerThread.async(execute: {
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
+                self.responseQueue.enqueue(clientDescriptor);
+            });
+        case "OPTIONS":
+            guard let callback = OPTIONSRoutes[URI] else {
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                return;
+            }
+            
+            // generate response asynchronously on worker queue and queue the response on scheduler queue
+            workerThread.async(execute: {
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
+                self.responseQueue.enqueue(clientDescriptor);
+            });
+        case "CONNECT":
+            guard let callback = CONNECTRoutes[URI] else {
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                return;
+            }
+            
+            // generate response asynchronously on worker queue and queue the response on scheduler queue
+            workerThread.async(execute: {
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
+                self.responseQueue.enqueue(clientDescriptor);
+            });
+        case "PATCH":
+            guard let callback = PATCHRoutes[URI] else {
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                return;
+            }
+            
+            // generate response asynchronously on worker queue and queue the response on scheduler queue
+            workerThread.async(execute: {
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
+                self.responseQueue.enqueue(clientDescriptor);
+            });
+        case "HOST":
+            guard let callback = HOSTRoutes[URI] else {
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                return;
+            }
+            
+            // generate response asynchronously on worker queue and queue the response on scheduler queue
+            workerThread.async(execute: {
+                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
+                self.responseQueue.enqueue(clientDescriptor);
+            });
+        default:
+            // defaults to 404 if method not found
+            scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
         }
-        
     }
     
     /**
@@ -514,7 +589,7 @@ open class HTTPServer : NSObject {
         
         // schedule request processing and response
         if sendFlag == true {
-            createResponse(withDescriptor: clientDescriptor);
+            routeRequest(withDescriptor: clientDescriptor);
         }
     }
     
@@ -664,7 +739,7 @@ open class HTTPServer : NSObject {
                             
                             // if full body has been set, schedule a response
                             if self.parseMessageBody(lines, forClient: clientDesc) {
-                                self.createResponse(withDescriptor: clientDesc);
+                                self.routeRequest(withDescriptor: clientDesc);
                             }
                             
                             // remove request from temp table since message body is now stored in client object
@@ -773,6 +848,55 @@ open class HTTPServer : NSObject {
      */
     func addPOSTRoute(_ route:String, callback: @escaping RouteClosure) {
         POSTRoutes[route] = callback;
+    }
+    
+    /**
+        Adds a callback to handle the specified PUT route
+     */
+    func addPUTRoute(_ route:String, callback: @escaping RouteClosure) {
+        PUTRoutes[route] = callback;
+    }
+    
+    /**
+        Adds a callback to handle the specified DELETE route
+     */
+    func addDELETERoute(_ route:String, callback: @escaping RouteClosure) {
+        DELETERoutes[route] = callback;
+    }
+    
+    /**
+        Adds a callback to handle the specified TRACE route
+     */
+    func addTRACERoute(_ route:String, callback: @escaping RouteClosure) {
+        TRACERoutes[route] = callback;
+    }
+    
+    /**
+        Adds a callback to handle the specified OPTIONS route
+     */
+    func addOPTIONSRoute(_ route:String, callback: @escaping RouteClosure) {
+        OPTIONSRoutes[route] = callback;
+    }
+    
+    /**
+        Adds a callback to handle the specified CONNECT route
+     */
+    func addCONNECTRoute(_ route:String, callback: @escaping RouteClosure) {
+        CONNECTRoutes[route] = callback;
+    }
+    
+    /**
+        Adds a callback to handle the specified PATCH route
+     */
+    func addPATCHRoute(_ route:String, callback: @escaping RouteClosure) {
+        PATCHRoutes[route] = callback;
+    }
+    
+    /**
+        Adds a callback to handle the specified HOST route
+     */
+    func addHOSTRoute(_ route:String, callback: @escaping RouteClosure) {
+        HOSTRoutes[route] = callback;
     }
     
     /**
