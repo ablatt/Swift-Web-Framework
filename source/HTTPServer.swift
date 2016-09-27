@@ -39,7 +39,7 @@ open class HTTPServer : NSObject {
     fileprivate let lockQueue = DispatchQueue(label: "httpserver.lock", attributes: []);
 
     // list of connected clients
-    fileprivate var clients = Dictionary<Int32, ClientObject>();
+    fileprivate var clientsList = Dictionary<Int32, ClientObject>();
     
     // queue of connected clients to send responses to
     fileprivate var responseQueue = Queue<ClientObject>();
@@ -47,9 +47,6 @@ open class HTTPServer : NSObject {
     // socket variables
     var kq:Int32 = -1;                  // kernel queue descriptor
     var serverSock:Int32 = 0;             // server socket
-    
-    // table to temporarily hold incoming requests
-    var partialReqTable = Dictionary<Int32, String>();
 
 //MARK: Initializers
     override init () {
@@ -423,11 +420,11 @@ open class HTTPServer : NSObject {
                 print("Bytes sent: \(bytesSent) / \(numBytes)");
                 
                 // if connection type is keep-alive, don't close the connection
-                guard let keepAlive = self.clients[fd]?.requestHeader["Connection"] ,
+                guard let keepAlive = self.clientsList[fd]?.requestHeader["Connection"] ,
                         keepAlive == "keep-alive" else {
                     print("keep-alive is not detected");
                     close(fd);
-                    self.clients[fd] = nil;
+                    self.clientsList[fd] = nil;
                     return;
                 }
             });
@@ -492,49 +489,45 @@ open class HTTPServer : NSObject {
                         if numBytes == 0 {
                             print("no bytes found, closing");
                             close(clientDesc);
-                            self.clients[clientDesc] = nil;
+                            self.clientsList[clientDesc] = nil;
                             return;
                         }
-                        let request = String.init(cString: &recvBuf);
                     
                         // get client object
                         var client:ClientObject!;
-                        if self.clients[clientDesc] == nil {
+                        if self.clientsList[clientDesc] == nil {
                             client = ClientObject();
                             
                             // add to clients table
-                            self.clients[clientDesc] = client;
+                            self.clientsList[clientDesc] = client;
                             
                             client.fd = clientDesc;
                         } else {
-                            client = self.clients[clientDesc];
+                            client = self.clientsList[clientDesc];
                         }
 
-                        // add to temporary request table
-                        client.rawRequest.append(request);
+                        // append to raw request string
+                        client.rawRequest.append(String.init(cString: &recvBuf));
   
                         /**
                             3 Cases for the Received Request:
-                            Case 1: Client object contains request method so header has been processed. Client buffer is part of message body
+                            Case 1: Client object contains request method so header has been processed. Client buffer is part of message body.
                  
                             Case 2: Client object does not contain request method. Client buffer contains "\r\n\r\n" so a full header can be processed 
                                     and the request method can be extracted.
                  
                             Case 3: Client object does not contain request method. Client buffer does not contain "\r\n\r\n" so we only received 
-                                    a partial header. Add the partial message to the partial request table and continue getting data from this client.
+                                    a partial header. Continue to receive data from client until we get this end of header string.
                      
                         */
                         // Case 1
-                        if self.clients[clientDesc]!.requestHeader["METHOD"] != nil {
-                            let lines = request.components(separatedBy: "\n");
+                        if client.requestHeader["METHOD"] != nil {
+                            let lines = client.rawRequest.components(separatedBy: "\n");
                             
                             // if full body has been set, schedule a response
                             if self.parseMessageBody(lines, forClient: client) {
                                 self.routeRequest(forClient: client);
                             }
-                            
-                            // remove request from temp table since message body is now stored in client object
-                            self.partialReqTable[clientDesc] = nil;
                         }
                         // Case 2
                         else if client.rawRequest.range(of: "\r\n\r\n") != nil {
