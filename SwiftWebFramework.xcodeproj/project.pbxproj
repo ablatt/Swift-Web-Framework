@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE14E9551D9A4A040089659E /* ResponseStatusCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */; };
 		CEAA0D011D6D5FAD00CF56EE /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */; };
 		CEAA0D021D6D5FAD00CF56EE /* HTTPServerExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFD1D6D5FAD00CF56EE /* HTTPServerExtensions.swift */; };
 		CEAA0D031D6D5FAD00CF56EE /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFE1D6D5FAD00CF56EE /* main.swift */; };
@@ -35,6 +36,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResponseStatusCodes.swift; sourceTree = "<group>"; };
 		CE2AA0261D6A0B3900F918B4 /* Swift Web Framework Console */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Swift Web Framework Console"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = HTTPServer.swift; path = source/HTTPServer.swift; sourceTree = SOURCE_ROOT; };
 		CEAA0CFD1D6D5FAD00CF56EE /* HTTPServerExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = HTTPServerExtensions.swift; path = source/HTTPServerExtensions.swift; sourceTree = SOURCE_ROOT; };
@@ -88,6 +90,7 @@
 			children = (
 				CEFC07C51D749CA400A3FB6D /* ClientObject.swift */,
 				CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */,
+				CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */,
 				CEAA0CFD1D6D5FAD00CF56EE /* HTTPServerExtensions.swift */,
 				CEAA0CFE1D6D5FAD00CF56EE /* main.swift */,
 				CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */,
@@ -207,6 +210,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEAA0D051D6D5FAD00CF56EE /* Utility.swift in Sources */,
+				CE14E9551D9A4A040089659E /* ResponseStatusCodes.swift in Sources */,
 				CEFC07C61D749CA400A3FB6D /* ClientObject.swift in Sources */,
 				CEAA0D021D6D5FAD00CF56EE /* HTTPServerExtensions.swift in Sources */,
 				CEAA0D011D6D5FAD00CF56EE /* HTTPServer.swift in Sources */,
