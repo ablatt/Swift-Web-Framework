@@ -85,121 +85,43 @@ open class HTTPServer : NSObject {
         }
         
         // process each different HTTP method
+        var callback:RouteClosure? = nil;
         switch client.requestHeader["METHOD"]! {
         case "GET":
-             guard let callback = GETRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = GETRoutes[URI];
         case "HEAD":
-            guard let callback = HEADRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = HEADRoutes[URI];
         case "POST":
-            guard let callback = POSTRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = POSTRoutes[URI];
         case "PUT":
-            guard let callback = PUTRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = PUTRoutes[URI];
         case "DELETE":
-            guard let callback = DELETERoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = DELETERoutes[URI];
         case "TRACE":
-            guard let callback = TRACERoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = TRACERoutes[URI];
         case "OPTIONS":
-            guard let callback = OPTIONSRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = OPTIONSRoutes[URI];
         case "CONNECT":
-            guard let callback = CONNECTRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = CONNECTRoutes[URI];
         case "PATCH":
-            guard let callback = PATCHRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = PATCHRoutes[URI];
         case "HOST":
-            guard let callback = HOSTRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-                return;
-            }
-            
-            // generate response asynchronously on worker queue and queue the response on scheduler queue
-            workerThread.async(execute: {
-                client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(client);
-            });
+            callback = HOSTRoutes[URI];
         default:
             // defaults to 404 if method not found
             scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
         }
+        
+        guard callback != nil else {
+            scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
+            return;
+        }
+        
+        // generate response asynchronously on worker queue and queue the response on scheduler queue
+        workerThread.async(execute: {
+            client.response = self.addResponseHeader(callback!(client), withStatusCode:"200");
+            self.responseQueue.enqueue(client);
+        });
     }
     
     /**
