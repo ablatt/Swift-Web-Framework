@@ -45,8 +45,8 @@ open class HTTPServer : NSObject {
     fileprivate var responseQueue = Queue<ClientObject>();
     
     // socket variables
-    var kq:Int32 = -1;                  // kernel queue descriptor
-    var serverSock:Int32 = 0;             // server socket
+    var kq:Int32 = -1;                      // kernel queue descriptor
+    var serverSock:Int32 = 0;               // server socket
 
 //MARK: Initializers
     override init () {
@@ -454,8 +454,7 @@ open class HTTPServer : NSObject {
             
             // iterate through all returned kernel events
             for i in 0...Int(numEvents - 1) {
-                // check if kevent is on socket fd
-                if kEventList[i].ident == UInt(self.serverSock) {
+                if kEventList[i].ident == UInt(self.serverSock) {   // client attempting to connect
                     // accept incoming connection
                     var clientSock:Int32 = -1;
                     var clientInfo = sockaddr();
@@ -473,7 +472,7 @@ open class HTTPServer : NSObject {
                         close(clientSock);
                         continue;
                     }
-                } else if Int32(kEventList[i].filter) == EVFILT_READ {  // read from client
+                } else if Int32(kEventList[i].filter) == EVFILT_READ {  // client sending data
                         var recvBuf = [CChar](repeating: 0, count: 512);
                         let clientDesc = Int32(kEventList[i].ident);
                         var numBytes = 0;
@@ -485,7 +484,7 @@ open class HTTPServer : NSObject {
                         }
                         print("Bytes received: \(numBytes)");
                         
-                        // client has closed the request of numbytes is 0
+                        // client has closed the request if numbytes is 0
                         if numBytes == 0 {
                             print("no bytes found, closing");
                             close(clientDesc);
@@ -493,7 +492,7 @@ open class HTTPServer : NSObject {
                             return;
                         }
                     
-                        // get client object
+                        // get client object from client list
                         var client:ClientObject!;
                         if self.clientsList[clientDesc] == nil {
                             client = ClientObject();
@@ -579,7 +578,7 @@ open class HTTPServer : NSObject {
             return;
         }
         
-        // bind socket to local address. must now cast to unsafe pointer and then rebind memory to sockaddr type
+        // bind socket to local address. cast sockaddr_in to unsafe ptr, and then map ptr memory to sockaddr type
         guard (withUnsafePointer(to: &sin) {
             // Temporarily bind the memory at &addr to a single instance of type sockaddr.
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
