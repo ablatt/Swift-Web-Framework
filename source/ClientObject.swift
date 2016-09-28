@@ -8,11 +8,12 @@
 
 import Foundation
 
-class ClientObject {
+public class ClientObject {
     var requestHeader:Dictionary<String, String>!;          // dictionary of request header values
     var responseHeader:Dictionary<String, String>!;         // dictionary of response header values
     var formData:Dictionary<String, String>?                // form data if POST request
     var response:String?                                    // response to send to client
+    var rawRequest:String = String()                        // holds raw request while receiving
     
     // body information
     var bodyStartingIndex = -1;
@@ -20,6 +21,8 @@ class ClientObject {
     var bodyLength = 0;
     // TODO: Timestamp
     
+    // private
+    var fd:Int32 = -1;
     init () {
         resetData();
     }
@@ -34,4 +37,5 @@ class ClientObject {
         self.requestBody = nil;
         self.bodyLength = 0;
     }
+    
 }

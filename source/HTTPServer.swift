@@ -39,17 +39,14 @@ open class HTTPServer : NSObject {
     fileprivate let lockQueue = DispatchQueue(label: "httpserver.lock", attributes: []);
 
     // list of connected clients
-    fileprivate var clients = Dictionary<Int32, ClientObject>();
+    fileprivate var clientsList = Dictionary<Int32, ClientObject>();
     
     // queue of connected clients to send responses to
-    fileprivate var responseQueue = Queue<Int32>();
+    fileprivate var responseQueue = Queue<ClientObject>();
     
     // socket variables
-    var kq:Int32 = -1;                  // kernel queue descriptor
-    var serverSock:Int32 = 0;             // server socket
-    
-    // table to temporarily hold incoming requests
-    var partialReqTable = Dictionary<Int32, String>();
+    var kq:Int32 = -1;                      // kernel queue descriptor
+    var serverSock:Int32 = 0;               // server socket
 
 //MARK: Initializers
     override init () {
@@ -65,32 +62,22 @@ open class HTTPServer : NSObject {
     /**
         Schedule error response
      */
-    fileprivate func scheduleStatusCodeResponse(withStatusCode statusCode:String, forClient clientDescriptor:Int32) {
-        guard let client = clients[clientDescriptor] else {
-            print("error: client wasn't stored in clients table.");
-            return;
-        }
-        
+    fileprivate func scheduleStatusCodeResponse(withStatusCode statusCode:String, forClient client:ClientObject) {
         guard statusCodeHandler[statusCode] != nil else {
             client.response = "Error in request."
-            self.responseQueue.enqueue(clientDescriptor);
+            self.responseQueue.enqueue(client);
             return;
         }
         
         client.response = addResponseHeader(statusCodeHandler["400"]!(client), withStatusCode: statusCode);
-        self.responseQueue.enqueue(clientDescriptor);
+        self.responseQueue.enqueue(client);
     }
 
 //MARK: Methods to create the response body and header
     /**
         Schedule the response
      */
-    fileprivate func routeRequest(withDescriptor clientDescriptor: Int32) {
-        guard let client = clients[clientDescriptor] else {
-            print("error: client wasn't stored in clients table.");
-            return;
-        }
-        
+    fileprivate func routeRequest(forClient client: ClientObject) {
         // should always return true since it was processed in validateRequestHeader method
         guard let URI = client.requestHeader["URI"] else {
             print("URI not detected");
@@ -101,117 +88,117 @@ open class HTTPServer : NSObject {
         switch client.requestHeader["METHOD"]! {
         case "GET":
              guard let callback = GETRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "HEAD":
             guard let callback = HEADRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "POST":
             guard let callback = POSTRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "PUT":
             guard let callback = PUTRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "DELETE":
             guard let callback = DELETERoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "TRACE":
             guard let callback = TRACERoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "OPTIONS":
             guard let callback = OPTIONSRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "CONNECT":
             guard let callback = CONNECTRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "PATCH":
             guard let callback = PATCHRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         case "HOST":
             guard let callback = HOSTRoutes[URI] else {
-                scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+                scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
                 return;
             }
             
             // generate response asynchronously on worker queue and queue the response on scheduler queue
             workerThread.async(execute: {
                 client.response = self.addResponseHeader(callback(client), withStatusCode:"200");
-                self.responseQueue.enqueue(clientDescriptor);
+                self.responseQueue.enqueue(client);
             });
         default:
             // defaults to 404 if method not found
-            scheduleStatusCodeResponse(withStatusCode: "404", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
         }
     }
     
@@ -290,15 +277,10 @@ open class HTTPServer : NSObject {
     /**
         Special function for processing POST requests
      */
-    fileprivate func parseMessageBody(_ lines:[String], forClient clientDescriptor:Int32) -> Bool {
-        guard let client = clients[clientDescriptor] else {
-            print("client not found");
-            return false;
-        }
-        
+    fileprivate func parseMessageBody(_ lines:[String], forClient client:ClientObject) -> Bool {
         guard var contentLength = client.requestHeader["Content-Length"] else {
             print("can't fetch content length");
-            scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "400", forClient: client);
             return false;
         }
         
@@ -307,13 +289,13 @@ open class HTTPServer : NSObject {
         contentLength = contentLength.replacingOccurrences(of: " ", with: "");
         guard let bodySize = Int(contentLength) else {
             print("Content-Length header not found");
-            scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "400", forClient: client);
             return false;
         }
         
         // set body in client object
         for i in (0...lines.count-1) {
-            client.bodyLength = client.bodyLength + lines[i].characters.count*MemoryLayout<CChar>.size;
+            client.bodyLength += lines[i].characters.count*MemoryLayout<CChar>.size;
             if client.requestBody == nil {
                 client.requestBody = [String]();
             }
@@ -331,22 +313,17 @@ open class HTTPServer : NSObject {
     /**
         Process request header from client
      */
-    fileprivate func parseRequest(_ request: String, onSocket clientDescriptor: Int32) {
-        guard let client =  clients[clientDescriptor] else {
-            print("not in clients table");
-            return;
-        }
-        
+    fileprivate func parseRequest(forClient client: ClientObject) {
         // create the request dictionary to hold HTTP header key and values
         client.requestHeader = Dictionary<String, String>();
         client.requestHeader["METHOD"] = nil;
         client.requestHeader["URI"] = nil;
         
         // initial line should contain URI & method
-        let lines = request.components(separatedBy: "\n");
+        let lines = client.rawRequest.components(separatedBy: "\n");
         var tokens = lines[0].components(separatedBy: " ");
         guard tokens.count >= 2 else {
-            scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "400", forClient: client);
             return;
         }
         
@@ -374,7 +351,7 @@ open class HTTPServer : NSObject {
                 }
                 
                 // extract form data if the full body is in the request object
-                if parseMessageBody(bodyArr, forClient: clientDescriptor) || chunkedEncoding == true {
+                if parseMessageBody(bodyArr, forClient: client) || chunkedEncoding == true {
                     client.formData = parseFormData(FromRequest: lines, startingAtIndex: i+1);
                 } else {
                     sendFlag = false;
@@ -399,13 +376,13 @@ open class HTTPServer : NSObject {
         // validate request header
         guard validateRequestHeader(client) else {
             print("Invalid request header");
-            scheduleStatusCodeResponse(withStatusCode: "400", forClient: clientDescriptor);
+            scheduleStatusCodeResponse(withStatusCode: "400", forClient: client);
             return;
         }
         
         // schedule request processing and response
         if sendFlag == true {
-            routeRequest(withDescriptor: clientDescriptor);
+            routeRequest(forClient: client);
         }
     }
     
@@ -417,20 +394,17 @@ open class HTTPServer : NSObject {
         while self.responseQueue.empty() == false {
             // lock since it's possible response object is large
             lockQueue.sync(execute: {
-                guard let fd = self.responseQueue.dequeue() else {
-                    print("response not set for client");
+                guard let client = self.responseQueue.dequeue() else {
+                    print("failed to get client from response queue");
                     return;
                 }
                 
-                guard let client = self.clients[fd] else {
-                    print("failed to get client from client list");
-                    return;
-                }
-                
+                let fd = client.fd;
                 guard let response = client.response else {
                     print("failed to get response for client \(fd)");
                     return;
                 }
+                
                 let buff = response.cString(using: String.Encoding.utf8)!;
                 let numBytes = buff.count;
                 var bytesSent = 0;
@@ -446,11 +420,11 @@ open class HTTPServer : NSObject {
                 print("Bytes sent: \(bytesSent) / \(numBytes)");
                 
                 // if connection type is keep-alive, don't close the connection
-                guard let keepAlive = self.clients[fd]?.requestHeader["Connection"] ,
+                guard let keepAlive = self.clientsList[fd]?.requestHeader["Connection"] ,
                         keepAlive == "keep-alive" else {
                     print("keep-alive is not detected");
                     close(fd);
-                    self.clients[fd] = nil;
+                    self.clientsList[fd] = nil;
                     return;
                 }
             });
@@ -480,8 +454,7 @@ open class HTTPServer : NSObject {
             
             // iterate through all returned kernel events
             for i in 0...Int(numEvents - 1) {
-                // check if kevent is on socket fd
-                if kEventList[i].ident == UInt(self.serverSock) {
+                if kEventList[i].ident == UInt(self.serverSock) {   // client attempting to connect
                     // accept incoming connection
                     var clientSock:Int32 = -1;
                     var clientInfo = sockaddr();
@@ -499,7 +472,7 @@ open class HTTPServer : NSObject {
                         close(clientSock);
                         continue;
                     }
-                } else if Int32(kEventList[i].filter) == EVFILT_READ {  // read from client
+                } else if Int32(kEventList[i].filter) == EVFILT_READ {  // client sending data
                         var recvBuf = [CChar](repeating: 0, count: 512);
                         let clientDesc = Int32(kEventList[i].ident);
                         var numBytes = 0;
@@ -511,63 +484,54 @@ open class HTTPServer : NSObject {
                         }
                         print("Bytes received: \(numBytes)");
                         
-                        // client has closed the request of numbytes is 0
+                        // client has closed the request if numbytes is 0
                         if numBytes == 0 {
                             print("no bytes found, closing");
                             close(clientDesc);
-                            self.clients[clientDesc] = nil;
+                            self.clientsList[clientDesc] = nil;
                             return;
                         }
-                        let request = String.init(cString: &recvBuf);
                     
-                        // get client object
+                        // get client object from client list
                         var client:ClientObject!;
-                        if self.clients[clientDesc] == nil {
+                        if self.clientsList[clientDesc] == nil {
                             client = ClientObject();
                             
-                            // add to clients table
-                            self.clients[clientDesc] = client;
+                            // add to clients list
+                            self.clientsList[clientDesc] = client;
+                            
+                            client.fd = clientDesc;
                         } else {
-                            client = self.clients[clientDesc];
+                            client = self.clientsList[clientDesc];
                         }
 
-                        // add to temporary request table
-                        if self.partialReqTable[clientDesc] != nil {
-                            self.partialReqTable[clientDesc]!.append(request);
-                        } else {
-                            self.partialReqTable[clientDesc] = request;
-                        }
-                    
+                        // append to raw request string
+                        client.rawRequest.append(String.init(cString: &recvBuf));
+  
                         /**
-                                3 Cases for the Received Request:
-                                Case 1: Client object contains request method so header has been processed. Client buffer is part of message body
-                     
-                                Case 2: Client object does not contain request method. Client buffer contains "\r\n\r\n" so a full header can be processed 
-                                        and the request method can be extracted.
-                     
-                                Case 3: Client object does not contain request method. Client buffer does not contain "\r\n\r\n" so we only received a partial header.
-                                        Add the partial message to the partial request table and continue getting data from this client.
+                            3 Cases for the Received Request:
+                            Case 1: Client object contains request method so header has been processed. Client buffer is part of message body.
+                 
+                            Case 2: Client object does not contain request method. Client buffer contains "\r\n\r\n" so a full header can be processed 
+                                    and the request method can be extracted.
+                 
+                            Case 3: Client object does not contain request method. Client buffer does not contain "\r\n\r\n" so we only received 
+                                    a partial header. Continue to receive data from client until we get this end of header string.
                      
                         */
                         // Case 1
-                        if self.clients[clientDesc] != nil && self.clients[clientDesc]!.requestHeader["METHOD"] == "POST" {
-                            let lines = request.components(separatedBy: "\n");
+                        if client.requestHeader["METHOD"] != nil {
+                            let lines = client.rawRequest.components(separatedBy: "\n");
                             
                             // if full body has been set, schedule a response
-                            if self.parseMessageBody(lines, forClient: clientDesc) {
-                                self.routeRequest(withDescriptor: clientDesc);
+                            if self.parseMessageBody(lines, forClient: client) {
+                                self.routeRequest(forClient: client);
                             }
-                            
-                            // remove request from temp table since message body is now stored in client object
-                            self.partialReqTable[clientDesc] = nil;
                         }
                         // Case 2
-                        else if self.partialReqTable[clientDesc]!.range(of: "\r\n\r\n") != nil {
+                        else if client.rawRequest.range(of: "\r\n\r\n") != nil {
                             // process the request
-                            self.parseRequest(self.partialReqTable[clientDesc]!, onSocket: clientDesc);
-                            
-                            // remove request from temp table since message body is now stored in client object
-                            self.partialReqTable[clientDesc] = nil;
+                            self.parseRequest(forClient: client);
                         }
                         // Case 3
                         else {
@@ -614,7 +578,7 @@ open class HTTPServer : NSObject {
             return;
         }
         
-        // bind socket to local address. must now cast to unsafe pointer and then rebind memory to sockaddr type
+        // bind socket to local address. cast sockaddr_in to unsafe ptr, and then map ptr memory to sockaddr type
         guard (withUnsafePointer(to: &sin) {
             // Temporarily bind the memory at &addr to a single instance of type sockaddr.
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
@@ -734,5 +698,12 @@ open class HTTPServer : NSObject {
      */
     func addHostHandler(forHost host:String, callback:@escaping RouteClosure) {
         HOSTRoutes[host] = callback;
+    }
+    
+    /**
+        
+     */
+    func scheduleResponse(_ response:String, to client:ClientObject) {
+        self.responseQueue.enqueue(client);
     }
 }
