@@ -20,7 +20,7 @@ h.addGETRoute("/get_test_1", callback: { (request: ClientObject) -> String in
 });
 
 h.addGETRoute("/post_test_1", callback: { (request: ClientObject) -> String in
-    var page =  " <html>" +
+    let page =  " <html>" +
                 " <form action=\"after_post\" method=\"post\">" +
                 "   First name:<br> " +
                 "   <input type=\"text\" name=\"firstname\" value=\"\"><br>" +

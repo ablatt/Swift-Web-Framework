@@ -18,20 +18,20 @@ let POLL_TIME = 0.00005;
 //TODO: need signal handlers
 open class HTTPServer : NSObject {
     // dictionaries containing the routes and callbacks
-    fileprivate var GETRoutes = Dictionary<String, RouteClosure>();
-    fileprivate var HEADRoutes = Dictionary<String, RouteClosure>();
-    fileprivate var POSTRoutes = Dictionary<String, RouteClosure>();
-    fileprivate var PUTRoutes = Dictionary<String, RouteClosure>();
-    fileprivate var DELETERoutes = Dictionary<String, RouteClosure>();
-    fileprivate var TRACERoutes = Dictionary<String, RouteClosure>();
-    fileprivate var OPTIONSRoutes = Dictionary<String, RouteClosure>();
-    fileprivate var CONNECTRoutes = Dictionary<String, RouteClosure>();
-    fileprivate var PATCHRoutes = Dictionary<String, RouteClosure>();
-    fileprivate var HOSTRoutes = Dictionary<String, RouteClosure>();
+    internal var GETRoutes = Dictionary<String, RouteClosure>();
+    internal var HEADRoutes = Dictionary<String, RouteClosure>();
+    internal var POSTRoutes = Dictionary<String, RouteClosure>();
+    internal var PUTRoutes = Dictionary<String, RouteClosure>();
+    internal var DELETERoutes = Dictionary<String, RouteClosure>();
+    internal var TRACERoutes = Dictionary<String, RouteClosure>();
+    internal var OPTIONSRoutes = Dictionary<String, RouteClosure>();
+    internal var CONNECTRoutes = Dictionary<String, RouteClosure>();
+    internal var PATCHRoutes = Dictionary<String, RouteClosure>();
+    internal var HOSTRoutes = Dictionary<String, RouteClosure>();
     
     // other callbacks
-    fileprivate var statusCodeHandler = Dictionary<String, StatusCodeClosure> ();
-    fileprivate var middlewareList = Array<MiddlewareClosure>();
+    internal var statusCodeHandler = Dictionary<String, StatusCodeClosure> ();
+    internal var middlewareList = Array<MiddlewareClosure>();
     
     // queues to perform units of work
     fileprivate var workerThread = DispatchQueue(label: "http.worker.thread", attributes: DispatchQueue.Attributes.concurrent);       // concurrent queue for processing and work
@@ -42,11 +42,11 @@ open class HTTPServer : NSObject {
     fileprivate var clientsList = Dictionary<Int32, ClientObject>();
     
     // queue of connected clients to send responses to
-    fileprivate var responseQueue = Queue<ClientObject>();
+    internal var responseQueue = Queue<ClientObject>();
     
     // socket variables
-    var kq:Int32 = -1;                      // kernel queue descriptor
-    var serverSock:Int32 = 0;               // server socket
+    fileprivate var kq:Int32 = -1;                      // kernel queue descriptor
+    fileprivate var serverSock:Int32 = 0;               // server socket
 
 //MARK: Initializers
     override init () {
@@ -529,103 +529,5 @@ open class HTTPServer : NSObject {
         // since it does not inherit NSApplication, we must manually start the runloop. the runloop will
         // allow the NSTimer to fire continuously and so the client thread can handle requests
         RunLoop.main.run();
-    }
-
-    /**
-        Adds a callback to handle the specified GET route
-     */
-    func addGETRoute(_ route:String, callback: @escaping RouteClosure) {
-        GETRoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified HEAD route
-     */
-    func addHEADRoute(_ route:String, callback: @escaping RouteClosure) {
-        HEADRoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified POST route
-     */
-    func addPOSTRoute(_ route:String, callback: @escaping RouteClosure) {
-        POSTRoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified PUT route
-     */
-    func addPUTRoute(_ route:String, callback: @escaping RouteClosure) {
-        PUTRoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified DELETE route
-     */
-    func addDELETERoute(_ route:String, callback: @escaping RouteClosure) {
-        DELETERoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified TRACE route
-     */
-    func addTRACERoute(_ route:String, callback: @escaping RouteClosure) {
-        TRACERoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified OPTIONS route
-     */
-    func addOPTIONSRoute(_ route:String, callback: @escaping RouteClosure) {
-        OPTIONSRoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified CONNECT route
-     */
-    func addCONNECTRoute(_ route:String, callback: @escaping RouteClosure) {
-        CONNECTRoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified PATCH route
-     */
-    func addPATCHRoute(_ route:String, callback: @escaping RouteClosure) {
-        PATCHRoutes[route] = callback;
-    }
-    
-    /**
-        Adds a callback to handle the specified HOST route
-     */
-    func addHOSTRoute(_ route:String, callback: @escaping RouteClosure) {
-        HOSTRoutes[route] = callback;
-    }
-    
-    /**
-        Adds user defined middleware to process and validate the client request
-     */
-    func addMiddleware(_ middleware:@escaping MiddlewareClosure) {
-        middlewareList.append(middleware);
-    }
-    
-    /**
-        Adds handlers for HTTP status codes
-     */
-    func addStatusCodeHandler(_ handler:@escaping StatusCodeClosure, forStatusCode statusCode:String) {
-        statusCodeHandler[statusCode] = handler;
-    }
-    
-    /**
-        Adds handler for Hosts request header
-     */
-    func addHostHandler(forHost host:String, callback:@escaping RouteClosure) {
-        HOSTRoutes[host] = callback;
-    }
-    
-    /**
-        
-     */
-    func scheduleResponse(_ response:String, to client:ClientObject) {
-        self.responseQueue.enqueue(client);
     }
 }

@@ -9,20 +9,22 @@
 import Foundation
 
 public class ClientObject {
-    var requestHeader:Dictionary<String, String>!;          // dictionary of request header values
-    var responseHeader:Dictionary<String, String>!;         // dictionary of response header values
-    var formData:Dictionary<String, String>?                // form data if POST request
-    var response:String?                                    // response to send to client
-    var rawRequest:String = String()                        // holds raw request while receiving
+    // request data
+    internal var rawRequest:String = String()                        // holds raw request while receiving
+    public var requestHeader:Dictionary<String, String>!;          // dictionary of request header values
+    public var formData:Dictionary<String, String>?                // form data if POST request
+    internal var bodyStartingIndex = -1;
+    internal var requestBody:[String]?                               // body of the request
+    internal var bodyLength = 0;
     
-    // body information
-    var bodyStartingIndex = -1;
-    var requestBody:[String]?                               // body of the request
-    var bodyLength = 0;
+    // response data
+    public var responseHeader:Dictionary<String, String>!;         // dictionary of response header values
+    public var response:String?                                    // response to send to client
+    
     // TODO: Timestamp
     
     // private
-    var fd:Int32 = -1;
+    internal var fd:Int32 = -1;
     init () {
         resetData();
     }
