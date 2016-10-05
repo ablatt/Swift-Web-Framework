@@ -8,6 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		CE14E9551D9A4A040089659E /* ResponseStatusCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */; };
+		CE14E9591DA0470C0089659E /* ResponseStatusCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */; };
+		CE14E9731DA1BAC00089659E /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9721DA1BAC00089659E /* Router.swift */; };
+		CE14E9741DA1BAC00089659E /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9721DA1BAC00089659E /* Router.swift */; };
+		CE14E9761DA22FB50089659E /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9751DA22FB50089659E /* Scheduler.swift */; };
+		CE14E9771DA22FB50089659E /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9751DA22FB50089659E /* Scheduler.swift */; };
+		CE14E9B91DA37DBF0089659E /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9B81DA37DBF0089659E /* Dispatcher.swift */; };
+		CE14E9BA1DA37DBF0089659E /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9B81DA37DBF0089659E /* Dispatcher.swift */; };
 		CEAA0D011D6D5FAD00CF56EE /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */; };
 		CEAA0D021D6D5FAD00CF56EE /* Api.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFD1D6D5FAD00CF56EE /* Api.swift */; };
 		CEAA0D031D6D5FAD00CF56EE /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFE1D6D5FAD00CF56EE /* main.swift */; };
@@ -37,6 +44,9 @@
 
 /* Begin PBXFileReference section */
 		CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResponseStatusCodes.swift; sourceTree = "<group>"; };
+		CE14E9721DA1BAC00089659E /* Router.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
+		CE14E9751DA22FB50089659E /* Scheduler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Scheduler.swift; sourceTree = "<group>"; };
+		CE14E9B81DA37DBF0089659E /* Dispatcher.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatcher.swift; sourceTree = "<group>"; };
 		CE2AA0261D6A0B3900F918B4 /* Swift Web Framework Console */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Swift Web Framework Console"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = HTTPServer.swift; path = source/HTTPServer.swift; sourceTree = SOURCE_ROOT; };
 		CEAA0CFD1D6D5FAD00CF56EE /* Api.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Api.swift; path = source/Api.swift; sourceTree = SOURCE_ROOT; };
@@ -90,9 +100,12 @@
 			children = (
 				CEAA0CFD1D6D5FAD00CF56EE /* Api.swift */,
 				CEFC07C51D749CA400A3FB6D /* ClientObject.swift */,
+				CE14E9B81DA37DBF0089659E /* Dispatcher.swift */,
 				CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */,
 				CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */,
 				CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */,
+				CE14E9721DA1BAC00089659E /* Router.swift */,
+				CE14E9751DA22FB50089659E /* Scheduler.swift */,
 				CEAA0D001D6D5FAD00CF56EE /* Utility.swift */,
 				CEAA0CFE1D6D5FAD00CF56EE /* main.swift */,
 			);
@@ -173,6 +186,7 @@
 					};
 					CEE1FF8B1D7088EC009048E0 = {
 						CreatedOnToolsVersion = 7.3.1;
+						LastSwiftMigration = 0800;
 					};
 				};
 			};
@@ -209,8 +223,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE14E9731DA1BAC00089659E /* Router.swift in Sources */,
 				CEAA0D051D6D5FAD00CF56EE /* Utility.swift in Sources */,
+				CE14E9761DA22FB50089659E /* Scheduler.swift in Sources */,
 				CE14E9551D9A4A040089659E /* ResponseStatusCodes.swift in Sources */,
+				CE14E9B91DA37DBF0089659E /* Dispatcher.swift in Sources */,
 				CEFC07C61D749CA400A3FB6D /* ClientObject.swift in Sources */,
 				CEAA0D021D6D5FAD00CF56EE /* Api.swift in Sources */,
 				CEAA0D011D6D5FAD00CF56EE /* HTTPServer.swift in Sources */,
@@ -223,7 +240,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE14E9741DA1BAC00089659E /* Router.swift in Sources */,
+				CE14E9591DA0470C0089659E /* ResponseStatusCodes.swift in Sources */,
+				CE14E9771DA22FB50089659E /* Scheduler.swift in Sources */,
 				CEFC07C71D79EC5300A3FB6D /* ClientObject.swift in Sources */,
+				CE14E9BA1DA37DBF0089659E /* Dispatcher.swift in Sources */,
 				CEE1FF941D7088F5009048E0 /* HTTPServer.swift in Sources */,
 				CEE1FF961D7088F5009048E0 /* Api.swift in Sources */,
 				CEE1FF971D7088F5009048E0 /* main.swift in Sources */,
@@ -360,6 +381,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "user.Swift-Web-Framework";
 				PRODUCT_NAME = SwiftWebFramework;
 				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 3.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -382,6 +404,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "user.Swift-Web-Framework";
 				PRODUCT_NAME = SwiftWebFramework;
 				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 3.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};

@@ -8,7 +8,7 @@
 
 import Foundation
 
-var httpStatusCodes = [
+public var httpStatusCodes = [
     "100" : "Continue",
     "101" : "Switching Protocols",
     "102" : "Processing",

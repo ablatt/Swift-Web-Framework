@@ -17,21 +17,18 @@ public typealias MiddlewareClosure = (ClientObject) -> Bool;
  */
 protocol HTTPServerAPI {
     func readFile(_ file:String) throws -> [String];
-    func addGETRoute(_ route:String, callback: @escaping RouteClosure);
-    func addHEADRoute(_ route:String, callback: @escaping RouteClosure);
-    func addPOSTRoute(_ route:String, callback: @escaping RouteClosure);
-    func addPUTRoute(_ route:String, callback: @escaping RouteClosure);
-    func addDELETERoute(_ route:String, callback: @escaping RouteClosure);
-    func addTRACERoute(_ route:String, callback: @escaping RouteClosure);
-    func addOPTIONSRoute(_ route:String, callback: @escaping RouteClosure);
-    func addCONNECTRoute(_ route:String, callback: @escaping RouteClosure);
-    func addPATCHRoute(_ route:String, callback: @escaping RouteClosure);
-    func addHOSTRoute(_ route:String, callback: @escaping RouteClosure);
-    func addMiddleware(_ middleware:@escaping MiddlewareClosure);
+    func addGETRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addHEADRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addPOSTRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addPUTRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addDELETERoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addTRACERoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addOPTIONSRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addCONNECTRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addPATCHRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addHOSTRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
+    func addMiddleware(forHost host:String, withMiddlewareHandler middleware:@escaping MiddlewareClosure);
     func addStatusCodeHandler(_ handler:@escaping StatusCodeClosure, forStatusCode statusCode:String);
-    func scheduleResponse(_ response:String, to client:ClientObject);
-    func scheduleResponse(_ response:[String], to client:ClientObject);
-
 }
 
 /**
@@ -48,107 +45,130 @@ extension HTTPServer: HTTPServerAPI {
     }
     
     /**
-     Adds a callback to handle the specified GET route
+        Adds a callback to handle the specified GET route
      */
-    public func addGETRoute(_ route:String, callback: @escaping RouteClosure) {
-        GETRoutes[route] = callback;
+    public func addGETRoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.GETRoutes[host] == nil {
+            router.GETRoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.GETRoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified HEAD route
      */
-    public func addHEADRoute(_ route:String, callback: @escaping RouteClosure) {
-        HEADRoutes[route] = callback;
+    public func addHEADRoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.HEADRoutes[host] == nil {
+            router.HEADRoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.HEADRoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified POST route
      */
-    public func addPOSTRoute(_ route:String, callback: @escaping RouteClosure) {
-        POSTRoutes[route] = callback;
+    public func addPOSTRoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.POSTRoutes[host] == nil {
+            router.POSTRoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.POSTRoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified PUT route
      */
-    public func addPUTRoute(_ route:String, callback: @escaping RouteClosure) {
-        PUTRoutes[route] = callback;
+    public func addPUTRoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.PUTRoutes[host] == nil {
+            router.PUTRoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.PUTRoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified DELETE route
      */
-    public func addDELETERoute(_ route:String, callback: @escaping RouteClosure) {
-        DELETERoutes[route] = callback;
+    public func addDELETERoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.DELETERoutes[host] == nil {
+            router.DELETERoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.DELETERoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified TRACE route
      */
-    public func addTRACERoute(_ route:String, callback: @escaping RouteClosure) {
-        TRACERoutes[route] = callback;
+    public func addTRACERoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.TRACERoutes[host] == nil {
+            router.TRACERoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.TRACERoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified OPTIONS route
      */
-    public func addOPTIONSRoute(_ route:String, callback: @escaping RouteClosure) {
-        OPTIONSRoutes[route] = callback;
+    public func addOPTIONSRoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.OPTIONSRoutes[host] == nil {
+           router.OPTIONSRoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.OPTIONSRoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified CONNECT route
      */
-    public func addCONNECTRoute(_ route:String, callback: @escaping RouteClosure) {
-        CONNECTRoutes[route] = callback;
+    public func addCONNECTRoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.CONNECTRoutes[host] == nil {
+            router.CONNECTRoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.CONNECTRoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified PATCH route
      */
-    public func addPATCHRoute(_ route:String, callback: @escaping RouteClosure) {
-        PATCHRoutes[route] = callback;
+    public func addPATCHRoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.PATCHRoutes[host] == nil {
+            router.PATCHRoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.PATCHRoutes[host]![route] = callback;
     }
     
     /**
      Adds a callback to handle the specified HOST route
      */
-    public func addHOSTRoute(_ route:String, callback: @escaping RouteClosure) {
-        HOSTRoutes[route] = callback;
+    public func addHOSTRoute(_ route:String, forHost host:String = DEFAULT_HOST_NAME, withCallback callback: @escaping RouteClosure) {
+        if router.HOSTRoutes[host] == nil {
+            router.HOSTRoutes[host] = Dictionary<String, RouteClosure>();
+        }
+        router.HOSTRoutes[host]![route] = callback;
     }
     
     /**
      Adds user defined middleware to process and validate the client request
      */
-    public func addMiddleware(_ middleware:@escaping MiddlewareClosure) {
-        middlewareList.append(middleware);
+    public func addMiddleware(forHost host:String = DEFAULT_HOST_NAME, withMiddlewareHandler middleware:@escaping MiddlewareClosure) {
+        if middlewareList[host] == nil {
+            middlewareList[host] = Array<MiddlewareClosure>();
+        }
+        middlewareList[host]!.append(middleware);
     }
     
     /**
      Adds handlers for HTTP status codes
      */
     public func addStatusCodeHandler(_ handler:@escaping StatusCodeClosure, forStatusCode statusCode:String) {
-        statusCodeHandler[statusCode] = handler;
+        router.statusCodeHandler[statusCode] = handler;
     }
     
     /**
      Api to schedule response to client outside of callback. Parameter is a single response string
      */
-    public func scheduleResponse(_ response:String, to client:ClientObject) {
+    public func scheduleResponse(forClient client:ClientObject) {
         guard client.fd != -1 else {
             return;
         }
-        self.responseQueue.enqueue(client);
-    }
-    
-    /**
-     Api to schedule response to client outside of callback. Parameter is an array of response strings
-     */
-    public func scheduleResponse(_ response:[String], to client:ClientObject) {
-        guard client.fd != -1 else {
-            return;
-        }
-        self.responseQueue.enqueue(client);
+        self.scheduler.scheduleResponse(forClient: client)
     }
 }
 
