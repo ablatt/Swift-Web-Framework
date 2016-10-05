@@ -9,29 +9,26 @@
 import Foundation
 import Darwin
 
-// global constants
-let MAX_CONNECTIONS:Int32 = 1000
-let KQUEUE_TIMEOUT:Int = 100000;
-let KQUEUE_MAX_EVENTS = 32;
-let POLL_TIME = 0.00005;
+// globals
+internal let MAX_CONNECTIONS:Int32 = 1000
+internal let KQUEUE_TIMEOUT:Int = 100000;
+internal let KQUEUE_MAX_EVENTS = 32;
+internal let POLL_TIME = 0.00005;
+internal let DEFAULT_HOST_NAME = "localhost";
+internal typealias URIDictionary = Dictionary<String, RouteClosure>;
     
-//TODO: need signal handlers
 open class HTTPServer : NSObject {
-    // dictionaries containing the routes and callbacks
-    internal var GETRoutes = Dictionary<String, RouteClosure>();
-    internal var HEADRoutes = Dictionary<String, RouteClosure>();
-    internal var POSTRoutes = Dictionary<String, RouteClosure>();
-    internal var PUTRoutes = Dictionary<String, RouteClosure>();
-    internal var DELETERoutes = Dictionary<String, RouteClosure>();
-    internal var TRACERoutes = Dictionary<String, RouteClosure>();
-    internal var OPTIONSRoutes = Dictionary<String, RouteClosure>();
-    internal var CONNECTRoutes = Dictionary<String, RouteClosure>();
-    internal var PATCHRoutes = Dictionary<String, RouteClosure>();
-    internal var HOSTRoutes = Dictionary<String, RouteClosure>();
+    // router to route URIs to callbacks
+    internal let router = Router();
+    
+    // scheduler to create the response and send it
+    internal let scheduler = Scheduler();
+    
+    // dispatcher to create the response
+    internal let dispatcher = Dispatcher();
     
     // other callbacks
-    internal var statusCodeHandler = Dictionary<String, StatusCodeClosure> ();
-    internal var middlewareList = Array<MiddlewareClosure>();
+    internal var middlewareList = Dictionary<String, Array<MiddlewareClosure>>();
     
     // queues to perform units of work
     fileprivate var workerThread = DispatchQueue(label: "http.worker.thread", attributes: DispatchQueue.Attributes.concurrent);       // concurrent queue for processing and work
@@ -41,111 +38,19 @@ open class HTTPServer : NSObject {
     // list of connected clients
     fileprivate var clientsList = Dictionary<Int32, ClientObject>();
     
-    // queue of connected clients to send responses to
-    internal var responseQueue = Queue<ClientObject>();
-    
     // socket variables
     fileprivate var kq:Int32 = -1;                      // kernel queue descriptor
     fileprivate var serverSock:Int32 = 0;               // server socket
-
-//MARK: Initializers
-    override init () {
-        // setup default status code handlers
-        for (statusCode, description) in httpStatusCodes {
-            statusCodeHandler[statusCode] = {(request: ClientObject) -> String in
-                return statusCode + " - " + description + "\n";
-            }
-        }
-    }
-
-//MARK: Scheduling methods
-    /**
-        Schedule error response
-     */
-    fileprivate func scheduleStatusCodeResponse(withStatusCode statusCode:String, forClient client:ClientObject) {
-        guard statusCodeHandler[statusCode] != nil else {
-            client.response = "Error in request."
-            self.responseQueue.enqueue(client);
-            return;
-        }
-        
-        client.response = addResponseHeader(statusCodeHandler["400"]!(client), withStatusCode: statusCode);
-        self.responseQueue.enqueue(client);
-    }
-
-//MARK: Methods to create the response body and header
-    /**
-        Schedule the response
-     */
-    fileprivate func routeRequest(forClient client: ClientObject) {
-        // should always return true since it was processed in validateRequestHeader method
-        guard let URI = client.requestHeader["URI"] else {
-            print("URI not detected");
-            return;
-        }
-        
-        // process each different HTTP method
-        var callback:RouteClosure? = nil;
-        switch client.requestHeader["METHOD"]! {
-        case "GET":
-            callback = GETRoutes[URI];
-        case "HEAD":
-            callback = HEADRoutes[URI];
-        case "POST":
-            callback = POSTRoutes[URI];
-        case "PUT":
-            callback = PUTRoutes[URI];
-        case "DELETE":
-            callback = DELETERoutes[URI];
-        case "TRACE":
-            callback = TRACERoutes[URI];
-        case "OPTIONS":
-            callback = OPTIONSRoutes[URI];
-        case "CONNECT":
-            callback = CONNECTRoutes[URI];
-        case "PATCH":
-            callback = PATCHRoutes[URI];
-        case "HOST":
-            callback = HOSTRoutes[URI];
-        default:
-            // defaults to 404 if method not found
-            scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-        }
-        
-        guard callback != nil else {
-            scheduleStatusCodeResponse(withStatusCode: "404", forClient: client);
-            return;
-        }
-        
-        // generate response asynchronously on worker queue and queue the response on scheduler queue
-        workerThread.async(execute: {
-            client.response = self.addResponseHeader(callback!(client), withStatusCode:"200");
-            self.responseQueue.enqueue(client);
-        });
-    }
     
-    /**
-        Create the response header
-     */
-    //TODO: Add more HTTP headers
-    func addResponseHeader(_ response:String, withStatusCode statusCode:String) -> String {
-        // create HTTP-message
-        var header = "HTTP/1.1 ";
-        switch statusCode {
-        case "200":
-            header += statusCode + " OK";
-        default:
-            header += statusCode + " Bad Request";
+//MARK: Processing of the fully generated parsed request
+    fileprivate func processRequest(forClient client:ClientObject) {
+        guard let callback = self.router.getRouteForClient(client) else {
+            self.dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: self.router);
+            self.scheduleResponse(forClient: client);
+            return;
         }
-        header += "\r\n";
-        
-        // add Content-Length
-        let numBytes = response.characters.count;
-        header += "Content-Length: \(numBytes)\r\n";
-        
-        // add time header
-        
-        return header + "\r\n" + response + "\r\n";
+        self.dispatcher.createResponseForClient(client, withCallback: callback);
+        self.scheduler.scheduleResponse(forClient: client);
     }
     
 //MARK: Parsing and validation
@@ -163,8 +68,27 @@ open class HTTPServer : NSObject {
             return false;
         }
         
+        // HTTP 1.1 requires HOST header in request
+        if client.requestHeader["VERSION"] == "1.1" {
+            guard client.requestHeader["Host"] != nil else {
+                dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
+                scheduler.scheduleResponse(forClient: client);
+                return false;
+            }
+        }
+
+        var host:String! = client.requestHeader["Host"];
+        if host == nil {
+            host = DEFAULT_HOST_NAME;
+        }
+        
+        // if no middleware is defined, just return true
+        guard middlewareList[host] != nil else {
+            return true;
+        }
+        
         // pass request to user defined closures
-        for middleware in middlewareList {
+        for middleware in middlewareList[host]! {
             if middleware(client) == false {
                 return false;
             }
@@ -202,7 +126,6 @@ open class HTTPServer : NSObject {
     fileprivate func parseMessageBody(_ lines:[String], forClient client:ClientObject) -> Bool {
         guard var contentLength = client.requestHeader["Content-Length"] else {
             print("can't fetch content length");
-            scheduleStatusCodeResponse(withStatusCode: "400", forClient: client);
             return false;
         }
         
@@ -211,7 +134,8 @@ open class HTTPServer : NSObject {
         contentLength = contentLength.replacingOccurrences(of: " ", with: "");
         guard let bodySize = Int(contentLength) else {
             print("Content-Length header not found");
-            scheduleStatusCodeResponse(withStatusCode: "400", forClient: client);
+            dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
+            scheduler.scheduleResponse(forClient: client);
             return false;
         }
         
@@ -245,16 +169,19 @@ open class HTTPServer : NSObject {
         let lines = client.rawRequest.components(separatedBy: "\n");
         var tokens = lines[0].components(separatedBy: " ");
         guard tokens.count >= 2 else {
-            scheduleStatusCodeResponse(withStatusCode: "400", forClient: client);
+            print("Initial request line is invalid");
+            dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter:router);
+            scheduler.scheduleResponse(forClient: client);
             return;
         }
         
         // set URI and HTTP methods parsed from request
         client.requestHeader["METHOD"] = tokens[0];
         client.requestHeader["URI"] = tokens[1];
+        client.requestHeader["VERSION"] = tokens[2];
         
         // send flag
-        var sendFlag = true;
+        var processFlag = true;
         
         // process the other HTTP header entries
         for i in 1...(lines.count - 1) {
@@ -276,7 +203,7 @@ open class HTTPServer : NSObject {
                 if parseMessageBody(bodyArr, forClient: client) || chunkedEncoding == true {
                     client.formData = parseFormData(FromRequest: lines, startingAtIndex: i+1);
                 } else {
-                    sendFlag = false;
+                    processFlag = false;
                 }
                 
                 // POST data should be last thing in header so break
@@ -298,61 +225,20 @@ open class HTTPServer : NSObject {
         // validate request header
         guard validateRequestHeader(client) else {
             print("Invalid request header");
-            scheduleStatusCodeResponse(withStatusCode: "400", forClient: client);
+            dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
+            scheduler.scheduleResponse(forClient: client);
             return;
         }
         
         // schedule request processing and response
-        if sendFlag == true {
-            routeRequest(forClient: client);
-        }
-    }
-    
-//MARK: Event loop functions
-    /**
-        Timed function that attempts to send responses dispatched in a serial queue
-     */
-    @objc fileprivate func sendResponse(_ timer:Timer!) {
-        while self.responseQueue.empty() == false {
-            // lock since it's possible response object is large
-            lockQueue.sync(execute: {
-                guard let client = self.responseQueue.dequeue() else {
-                    print("failed to get client from response queue");
-                    return;
-                }
-                
-                let fd = client.fd;
-                guard let response = client.response else {
-                    print("failed to get response for client \(fd)");
-                    return;
-                }
-                
-                let buff = response.cString(using: String.Encoding.utf8)!;
-                let numBytes = buff.count;
-                var bytesSent = 0;
-                while bytesSent != numBytes {
-                    let res = send(fd, buff, response.lengthOfBytes(using: String.Encoding.utf8), MSG_OOB);
-                    guard res >= 0 else {
-                        print("failed to send response")
-                        return;
-                    }
-                    bytesSent += numBytes;
-                    fsync(fd);
-                }
-                print("Bytes sent: \(bytesSent) / \(numBytes)");
-                
-                // if connection type is keep-alive, don't close the connection
-                guard let keepAlive = self.clientsList[fd]?.requestHeader["Connection"] ,
-                        keepAlive == "keep-alive" else {
-                    print("keep-alive is not detected");
-                    close(fd);
-                    self.clientsList[fd] = nil;
-                    return;
-                }
+        if processFlag == true {
+            workerThread.async(execute: {
+                self.processRequest(forClient: client);
             });
         }
     }
     
+//MARK: Event loop functions
     @objc fileprivate func serverEventLoop(onServerSock serverSock:Int32) {
         // create array to store returned kevents
         var kEventList = Array(repeating: kevent(), count: KQUEUE_MAX_EVENTS);
@@ -395,7 +281,7 @@ open class HTTPServer : NSObject {
                         continue;
                     }
                 } else if Int32(kEventList[i].filter) == EVFILT_READ {  // client sending data
-                        var recvBuf = [CChar](repeating: 0, count: 512);
+                        var recvBuf = [CChar](repeating: 0, count: 1024);
                         let clientDesc = Int32(kEventList[i].ident);
                         var numBytes = 0;
                         numBytes = recv(clientDesc, UnsafeMutableRawPointer(mutating: recvBuf), recvBuf.count, 0);
@@ -445,9 +331,9 @@ open class HTTPServer : NSObject {
                         if client.requestHeader["METHOD"] != nil {
                             let lines = client.rawRequest.components(separatedBy: "\n");
                             
-                            // if full body has been set, schedule a response
+                            // if full body has been set, process the request
                             if self.parseMessageBody(lines, forClient: client) {
-                                self.routeRequest(forClient: client);
+                                processRequest(forClient: client);
                             }
                         }
                         // Case 2
@@ -475,14 +361,14 @@ open class HTTPServer : NSObject {
      */
     func startServer(onPort port:in_port_t) {
         // create timer to poll for respones to send
-        let timer1 = Timer(timeInterval: POLL_TIME, target: self, selector: #selector(self.sendResponse), userInfo: nil, repeats: true);
+        let timer1 = Timer(timeInterval: POLL_TIME, target: scheduler, selector: #selector(scheduler.sendResponse), userInfo: clientsList, repeats: true);
         let timer2 = Timer(timeInterval: POLL_TIME, target: self, selector: #selector(self.serverEventLoop), userInfo: nil, repeats: true);
         RunLoop.current.add(timer1, forMode: RunLoopMode.defaultRunLoopMode)
         RunLoop.current.add(timer2, forMode: RunLoopMode.defaultRunLoopMode)
         
         // create a tcp socket
-        self.serverSock = socket(PF_INET, SOCK_STREAM, 0);
-        guard self.serverSock > 0 else {
+        serverSock = socket(PF_INET, SOCK_STREAM, 0);
+        guard serverSock > 0 else {
             perror("socket");
             return;
         }
@@ -512,7 +398,7 @@ open class HTTPServer : NSObject {
         }
         
         // listen on the socket
-        guard listen(self.serverSock, MAX_CONNECTIONS) == 0 else {
+        guard listen(serverSock, MAX_CONNECTIONS) == 0 else {
             perror("listen");
             return;
         }
