@@ -26,7 +26,7 @@ class Scheduler : NSObject {
         Timed function that attempts to send responses dispatched in a serial queue
      */
     @objc internal func sendResponse(_ timer:Timer!) {
-        guard var clientsList = timer.userInfo as? Dictionary<Int32, ClientObject> else {
+        guard let connectedClients = timer.userInfo as? NSMutableSet else {
             print("Failed to get clients list in scheduler");
             return;
         }
@@ -59,12 +59,14 @@ class Scheduler : NSObject {
                 }
                 print("Bytes sent: \(bytesSent) / \(numBytes)");
                 
-                // if connection type is keep-alive, don't close the connection
-                guard let keepAlive = clientsList[fd]?.requestHeader["Connection"] ,
-                    keepAlive == "keep-alive" else {
+                // For HTTP 1.1, connections are considered persistent unless the Connection header is close
+                // For HTTP 1.0, connections are assumed to be closed
+                let connectionHeader = client.requestHeader["Connection"];
+                if (connectionHeader != nil && connectionHeader == "close") ||
+                    client.requestHeader["VERSION"] == "1.0" {
                         print("keep-alive is not detected");
                         close(fd);
-                        clientsList[fd] = nil;
+                        connectedClients.remove(fd);
                         return;
                 }
             });

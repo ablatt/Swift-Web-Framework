@@ -36,7 +36,8 @@ open class HTTPServer : NSObject {
     fileprivate let lockQueue = DispatchQueue(label: "httpserver.lock", attributes: []);
 
     // list of connected clients
-    fileprivate var clientsList = Dictionary<Int32, ClientObject>();
+    fileprivate var tempRequestList = Dictionary<Int32, ClientObject>();
+    fileprivate var connectedClients = NSMutableSet();
     
     // socket variables
     fileprivate var kq:Int32 = -1;                      // kernel queue descriptor
@@ -45,7 +46,7 @@ open class HTTPServer : NSObject {
 //MARK: Processing of the fully generated parsed request
     fileprivate func processRequest(forClient client:ClientObject) {
         guard let callback = self.router.getRouteForClient(client) else {
-            self.dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: self.router);
+            self.dispatcher.createStatusCodeResponse(withStatusCode: "404", forClient: client, withRouter: self.router);
             self.scheduleResponse(forClient: client);
             return;
         }
@@ -180,8 +181,8 @@ open class HTTPServer : NSObject {
         client.requestHeader["URI"] = tokens[1];
         client.requestHeader["VERSION"] = tokens[2];
         
-        // send flag
-        var processFlag = true;
+        // flag indicating if complete request was received
+        var completeRequestReceived = true;
         
         // process the other HTTP header entries
         for i in 1...(lines.count - 1) {
@@ -203,7 +204,7 @@ open class HTTPServer : NSObject {
                 if parseMessageBody(bodyArr, forClient: client) || chunkedEncoding == true {
                     client.formData = parseFormData(FromRequest: lines, startingAtIndex: i+1);
                 } else {
-                    processFlag = false;
+                    completeRequestReceived = false;
                 }
                 
                 // POST data should be last thing in header so break
@@ -231,10 +232,13 @@ open class HTTPServer : NSObject {
         }
         
         // schedule request processing and response
-        if processFlag == true {
+        if completeRequestReceived == true {
             workerThread.async(execute: {
                 self.processRequest(forClient: client);
             });
+            
+            // remove from temp request list since request was fully received
+            tempRequestList[client.fd] = nil;
         }
     }
     
@@ -280,6 +284,9 @@ open class HTTPServer : NSObject {
                         close(clientSock);
                         continue;
                     }
+                    
+                    // add to connected clients set
+                    connectedClients.add(clientSock);
                 } else if Int32(kEventList[i].filter) == EVFILT_READ {  // client sending data
                         var recvBuf = [CChar](repeating: 0, count: 1024);
                         let clientDesc = Int32(kEventList[i].ident);
@@ -296,21 +303,22 @@ open class HTTPServer : NSObject {
                         if numBytes == 0 {
                             print("no bytes found, closing");
                             close(clientDesc);
-                            self.clientsList[clientDesc] = nil;
+                            tempRequestList[clientDesc] = nil;
+                            connectedClients.remove(clientDesc);
                             return;
                         }
                     
                         // get client object from client list
                         var client:ClientObject!;
-                        if self.clientsList[clientDesc] == nil {
+                        if self.tempRequestList[clientDesc] == nil {
                             client = ClientObject();
                             
                             // add to clients list
-                            self.clientsList[clientDesc] = client;
+                            self.tempRequestList[clientDesc] = client;
                             
                             client.fd = clientDesc;
                         } else {
-                            client = self.clientsList[clientDesc];
+                            client = self.tempRequestList[clientDesc];
                         }
 
                         // append to raw request string
@@ -333,6 +341,7 @@ open class HTTPServer : NSObject {
                             
                             // if full body has been set, process the request
                             if self.parseMessageBody(lines, forClient: client) {
+                                tempRequestList[clientDesc] = nil;
                                 processRequest(forClient: client);
                             }
                         }
@@ -361,7 +370,7 @@ open class HTTPServer : NSObject {
      */
     func startServer(onPort port:in_port_t) {
         // create timer to poll for respones to send
-        let timer1 = Timer(timeInterval: POLL_TIME, target: scheduler, selector: #selector(scheduler.sendResponse), userInfo: clientsList, repeats: true);
+        let timer1 = Timer(timeInterval: POLL_TIME, target: scheduler, selector: #selector(scheduler.sendResponse), userInfo: connectedClients, repeats: true);
         let timer2 = Timer(timeInterval: POLL_TIME, target: self, selector: #selector(self.serverEventLoop), userInfo: nil, repeats: true);
         RunLoop.current.add(timer1, forMode: RunLoopMode.defaultRunLoopMode)
         RunLoop.current.add(timer2, forMode: RunLoopMode.defaultRunLoopMode)
