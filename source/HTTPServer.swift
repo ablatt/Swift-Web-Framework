@@ -45,13 +45,25 @@ open class HTTPServer : NSObject {
     
 //MARK: Processing of the fully generated parsed request
     fileprivate func processRequest(forClient client:ClientObject) {
-        guard let callback = self.router.getRouteForClient(client) else {
-            self.dispatcher.createStatusCodeResponse(withStatusCode: "404", forClient: client, withRouter: self.router);
-            self.scheduleResponse(forClient: client);
-            return;
+        // remove from temp request list since request was fully received
+        // only remove from request list if the chunked encoding processing is complete
+        if (client.usesChunkedEncoding && client.recievedFinalChunk) ||
+            (client.usesChunkedEncoding == false) {
+            tempRequestList[client.fd] = nil;
+        } else {
+            client.rawRequest.removeAll();
         }
-        self.dispatcher.createResponseForClient(client, withCallback: callback);
-        self.scheduler.scheduleResponse(forClient: client);
+
+        // generate response asynchronously
+        workerThread.async(execute: {
+            guard let callback = self.router.getRouteForClient(client) else {
+                self.dispatcher.createStatusCodeResponse(withStatusCode: "404", forClient: client, withRouter: self.router);
+                self.scheduleResponse(forClient: client);
+                return;
+            }
+            self.dispatcher.createResponseForClient(client, withCallback: callback);
+            self.scheduler.scheduleResponse(forClient: client);
+        });
     }
     
 //MARK: Parsing and validation
@@ -102,7 +114,7 @@ open class HTTPServer : NSObject {
     /**
         Parses out form data from the HTTP POST request
     */
-    fileprivate func parseFormData(FromRequest request:[String], startingAtIndex index:Int) -> Dictionary<String, String> {
+    fileprivate func parsePostData(FromRequest request:[String], startingAtIndex index:Int) -> Dictionary<String, String> {
         var formData = Dictionary<String, String>();
         
         // iterate through all the lines containing form data and extract
@@ -125,34 +137,100 @@ open class HTTPServer : NSObject {
         Special function for processing POST requests
      */
     fileprivate func parseMessageBody(_ lines:[String], forClient client:ClientObject) -> Bool {
-        guard var contentLength = client.requestHeader["Content-Length"] else {
-            print("can't fetch content length");
-            return false;
-        }
+        var contentLength = client.requestHeader["Content-Length"];
+        let chunkedEncoding = client.requestHeader["Transfer-Encoding"];
         
-        // strip white space and convert to int
-        contentLength = contentLength.replacingOccurrences(of: "\r", with: "");
-        contentLength = contentLength.replacingOccurrences(of: " ", with: "");
-        guard let bodySize = Int(contentLength) else {
-            print("Content-Length header not found");
-            dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
-            scheduler.scheduleResponse(forClient: client);
-            return false;
-        }
-        
-        // set body in client object
-        for i in (0...lines.count-1) {
-            client.bodyLength += lines[i].characters.count*MemoryLayout<CChar>.size;
-            if client.requestBody == nil {
-                client.requestBody = [String]();
+        // TODO: Add more cases to consider for different URIs
+        if contentLength == nil && chunkedEncoding == nil {
+            // POST requests need to have a Content-Length or be chunked-encoded
+            if client.requestHeader["METHOD"] == "POST" {
+                print("content-length not found nor chunked-encoding. cannot proceed parsing message body");
+                return false;
+            } else if client.requestHeader["METHOD"] == "GET" {
+                return true;
             }
-            client.requestBody!.append(lines[i]);
         }
         
-        // check if full body message was received
-        if client.bodyLength == bodySize {
-            return true;
-        } else {
+        // extract message body with content-length header specified
+        if contentLength != nil {
+            // strip white space and convert to int
+            contentLength = contentLength!.replacingOccurrences(of: "\r", with: "");
+            contentLength = contentLength!.replacingOccurrences(of: " ", with: "");
+            guard let bodySize = Int(contentLength!) else {
+                print("Content-Length header not found");
+                dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
+                scheduler.scheduleResponse(forClient: client);
+                return false;
+            }
+            
+            // extract message body
+            for i in (0...lines.count-1) {
+                client.currentBodyLength += lines[i].characters.count*MemoryLayout<CChar>.size;
+                if client.requestBody == nil {
+                    client.requestBody = [String]();
+                }
+                client.requestBody!.append(lines[i]);
+            }
+            
+            // check if full body message was received
+            if client.currentBodyLength == bodySize {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        // chunked-encoding
+        else {
+            for i in (0...lines.count-1) where i%2 == 0 {
+                var tokens = lines[i].replacingOccurrences(of: "\r", with: "").components(separatedBy: ";");
+                
+                guard tokens.count > 0 else {
+                    print("failed to get chunk size");
+                    return false;
+                }
+                
+                guard let chunkSize = hexToInt(withHexString:&tokens[0]) else {
+                    print("failed to convert hex chunk size to int");
+                    return false;
+                }
+                
+                // no more chunks but there are possible footers
+                if chunkSize != 0 && i < (lines.count - 1) {
+                    // next line contains request body
+                    if client.requestBody == nil {
+                        client.requestBody = [String]();
+                    }
+                    let bodyLine = lines[i+1].replacingOccurrences(of: "\r", with: "");
+                    client.requestBody!.append(bodyLine);
+                    print(chunkSize);
+                } else {
+                    // return true if we're on the last line
+                    if i == lines.count-1 {
+                        return false;
+                    }
+                    
+                    // extract footer
+                    for j in (i+1...lines.count-1) {
+                        // end of chunked data section
+                        if lines[j] == "" {
+                            break;
+                        }
+                        
+                        let footerTokens =  lines[j].components(separatedBy: ":");
+                        if footerTokens.count < 2 {
+                            continue;
+                        }
+                        if client.chunkedFooter == nil {
+                            client.chunkedFooter = Dictionary<String, String>();
+                        }
+                        client.chunkedFooter![footerTokens[0]] = footerTokens[1];
+                    }
+                    client.recievedFinalChunk = true;
+                    return true;
+                }
+            }
+            
+            // not all chunks received
             return false;
         }
     }
@@ -182,32 +260,36 @@ open class HTTPServer : NSObject {
         client.requestHeader["VERSION"] = tokens[2];
         
         // flag indicating if complete request was received
-        var completeRequestReceived = true;
+        var processRequestFlag = true;
         
         // process the other HTTP header entries
         for i in 1...(lines.count - 1) {
             // header is in key:val format
             tokens = lines[i].components(separatedBy: ":");
 
-            // message body might already exist after head so extract the partial body
-            if client.requestHeader["METHOD"] == "POST" && lines[i] == "\r"{
+            // full request header received
+            if lines[i] == "\r" {
                 let bodyArr = Array(lines[(i+1)...(lines.count-1)]);
                 
-                // we can start sending a response of the transfer encoding is chunked-encoding
-                var chunkedEncoding = false;
+                // check if client is using chunked encoding
                 if client.requestHeader["Transfer-Encoding"] != nil &&
                     client.requestHeader["Transfer-Encoding"] == "chunked" {
-                    chunkedEncoding = true;
+                    client.usesChunkedEncoding = true;
                 }
                 
-                // extract form data if the full body is in the request object
-                if parseMessageBody(bodyArr, forClient: client) || chunkedEncoding == true {
-                    client.formData = parseFormData(FromRequest: lines, startingAtIndex: i+1);
-                } else {
-                    completeRequestReceived = false;
+                // get request body if it exists. returns true if full body was received
+                if parseMessageBody(bodyArr, forClient: client) {
+                    if client.requestHeader["METHOD"] == "POST" {
+                        client.formData = parsePostData(FromRequest: lines, startingAtIndex: i+1);
+                    }
+                    // TODO: More processing of message body for different methods
+                }
+                // can only have partial message body if there is chunked encoding
+                else if client.usesChunkedEncoding == false {
+                    processRequestFlag = false;
                 }
                 
-                // POST data should be last thing in header so break
+                // '\r' is the last token in a request header
                 break;
             } else {
                 // header data has to be in key:value pair
@@ -232,13 +314,8 @@ open class HTTPServer : NSObject {
         }
         
         // schedule request processing and response
-        if completeRequestReceived == true {
-            workerThread.async(execute: {
-                self.processRequest(forClient: client);
-            });
-            
-            // remove from temp request list since request was fully received
-            tempRequestList[client.fd] = nil;
+        if processRequestFlag == true {
+            processRequest(forClient: client);
         }
     }
     
@@ -292,9 +369,9 @@ open class HTTPServer : NSObject {
                         let clientDesc = Int32(kEventList[i].ident);
                         var numBytes = 0;
                         numBytes = recv(clientDesc, UnsafeMutableRawPointer(mutating: recvBuf), recvBuf.count, 0);
-                        //recvBuf[recvBuf.count-1] = 0;
                         guard numBytes >= 0 else {
                             perror("recv");
+                            close(clientDesc);
                             return;
                         }
                         print("Bytes received: \(numBytes)");
@@ -326,27 +403,28 @@ open class HTTPServer : NSObject {
   
                         /**
                             3 Cases for the Received Request:
-                            Case 1: Client object contains request method so header has been processed. Client buffer is part of message body.
+                            Case 1: Client object has full request header. Client buffer is part of message body.
                  
-                            Case 2: Client object does not contain request method. Client buffer contains "\r\n\r\n" so a full header can be processed 
-                                    and the request method can be extracted.
+                            Case 2: Client object does not have full request header. Client buffer contains "\r\n\r\n" so a full header 
+                                    can be processed and the request method can be extracted.
                  
                             Case 3: Client object does not contain request method. Client buffer does not contain "\r\n\r\n" so we only received 
                                     a partial header. Continue to receive data from client until we get this end of header string.
                      
                         */
                         // Case 1
-                        if client.requestHeader["METHOD"] != nil {
+                        if client.hasCompleteHeader {
                             let lines = client.rawRequest.components(separatedBy: "\n");
                             
                             // if full body has been set, process the request
                             if self.parseMessageBody(lines, forClient: client) {
-                                tempRequestList[clientDesc] = nil;
                                 processRequest(forClient: client);
                             }
                         }
                         // Case 2
                         else if client.rawRequest.range(of: "\r\n\r\n") != nil {
+                            client.hasCompleteHeader = true;
+                            
                             // process the request
                             self.parseRequest(forClient: client);
                         }
