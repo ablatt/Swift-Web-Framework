@@ -45,7 +45,7 @@ class Dispatcher : NSObject {
             return;
         }
         
-        client.response = addResponseHeader(forResponse: router.statusCodeHandler["400"]!(client), withStatusCode: statusCode);
+        client.response = addResponseHeader(forResponse: router.statusCodeHandler[statusCode]!(client), withStatusCode: statusCode);
     }
     
     /**
@@ -53,6 +53,6 @@ class Dispatcher : NSObject {
      */
     internal func createResponseForClient(_ client:ClientObject, withCallback callback:RouteClosure) {
         let response = callback(client);
-        client.response = addResponseHeader(forResponse: response, withStatusCode: "400");
+        client.response = addResponseHeader(forResponse: response, withStatusCode: "200");
     }
 }

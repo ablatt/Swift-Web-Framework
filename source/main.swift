@@ -33,7 +33,7 @@ h.addGETRoute("/post_test_1", withCallback: { (request: ClientObject) -> String 
                 "   Last name:<br>" +
                 "   <input type=\"text\" name=\"lastname\" value=\"\"><br><br>" +
                 "   <input type=\"submit\" value=\"Submit\">" +
-                " </form> "
+                " </form> " +
                 " </html>";
     return page;
 });

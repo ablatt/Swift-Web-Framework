@@ -325,7 +325,8 @@ open class HTTPServer : NSObject {
         
         
         // if HTTP 1.1, send 100 response for valid request header
-        if client.requestHeader["VERSION"] == "HTTP/1.1" {
+        if client.requestHeader["VERSION"] == "HTTP/1.1" &&
+            client.requestHeader["Expect"] == "100-continue" {
             let responseClient = ClientObject();
             responseClient.fd = client.fd;
             dispatcher.createStatusCodeResponse(withStatusCode: "100", forClient: responseClient, withRouter: router);
@@ -402,7 +403,7 @@ open class HTTPServer : NSObject {
                             print("no bytes found, closing");
                             close(clientDesc);
                             tempRequestList[clientDesc] = nil;
-                            connectedClients.remove(clientDesc);
+                                connectedClients.remove(clientDesc);
                             return;
                         }
                     
