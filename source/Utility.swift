@@ -69,7 +69,6 @@ func hexToInt(withHexString hexString:inout String) -> Int? {
         default:
             return nil;
         }
-    
     }
     return ret;
 }

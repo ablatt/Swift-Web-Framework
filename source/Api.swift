@@ -170,5 +170,27 @@ extension HTTPServer: HTTPServerAPI {
         }
         self.scheduler.scheduleResponse(forClient: client)
     }
+    
+    /**
+        API to parse form data from message body
+     */
+    public func parseFormData2(FromRequest request:[String], startingAtIndex index:Int) -> Dictionary<String, String> {
+        var formData = Dictionary<String, String>();
+        
+        // iterate through all the lines containing form data and extract
+        for i in index...(request.count - 1) {
+            // different form data is delimited by &
+            let postEntries = request[i].components(separatedBy: "&");
+            for j in 0...(postEntries.count - 1) {
+                let formPair = postEntries[j].components(separatedBy: "=");
+                guard formPair.count == 2 else {
+                    formData[formPair[0]] = "";
+                    continue;
+                }
+                formData[formPair[0]] = formPair[1];
+            }
+        }
+        return formData;
+    }
 }
 

@@ -63,7 +63,7 @@ class Scheduler : NSObject {
                 // For HTTP 1.0, connections are assumed to be closed
                 let connectionHeader = client.requestHeader["Connection"];
                 if (connectionHeader != nil && connectionHeader == "close") ||
-                    client.requestHeader["VERSION"] == "1.0" {
+                    client.requestHeader["VERSION"] == "HTTP/1.0" {
                         print("keep-alive is not detected");
                         close(fd);
                         connectedClients.remove(fd);

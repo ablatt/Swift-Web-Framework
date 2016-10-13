@@ -18,6 +18,8 @@ class Dispatcher : NSObject {
         // create HTTP-message
         var header = "HTTP/1.1 ";
         switch statusCode {
+        case "100":
+            header += statusCode + " Continue"
         case "200":
             header += statusCode + " OK";
         default:
