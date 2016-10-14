@@ -47,11 +47,11 @@ open class HTTPServer : NSObject {
     fileprivate func processRequest(forClient client:ClientObject) {
         // remove from temp request list since request was fully received
         // only remove from request list if the chunked encoding processing is complete
-        if client.usesChunkedEncoding == false {
-            tempRequestList[client.fd] = nil;
-        } else {
+      //  if client.usesChunkedEncoding == false {
+       //     tempRequestList[client.fd] = nil;
+       // } else {
             client.rawRequest.removeAll();
-        }
+        //}
 
         // generate response asynchronously
         workerThread.async(execute: {
@@ -153,7 +153,6 @@ open class HTTPServer : NSObject {
         // extract message body with content-length header specified
         if contentLength != nil {
             // strip white space and convert to int
-            contentLength = contentLength!.replacingOccurrences(of: "\r", with: "");
             contentLength = contentLength!.replacingOccurrences(of: " ", with: "");
             guard let bodySize = Int(contentLength!) else {
                 print("Content-Length header not found");
@@ -164,11 +163,10 @@ open class HTTPServer : NSObject {
                         
             // extract message body
             for i in (0...lines.count-1) {
-                guard let line = lines[i].removingPercentEncoding else {
-                    // TODO: Throw error
-                    return false;
+                if lines[i] == "" {
+                    continue;
                 }
-                client.currentBodyLength += line.characters.count;
+                client.currentBodyLength += lines[i].characters.count;
                 if client.requestBody == nil {
                     client.requestBody = [String]();
                 }
@@ -188,7 +186,12 @@ open class HTTPServer : NSObject {
         // chunked-encoding
         else {
             var footerIndex = 0;
-            for i in (0...lines.count-1) where i%2 == 0 {
+            //print("Count: \(lines.count)");
+            for i in (0...lines.count-1) {
+                if lines[i] == "" {
+                    continue;
+                }
+                
                 var tokens = lines[i].components(separatedBy: ";");
                 
                 guard tokens.count > 0 else {
@@ -196,30 +199,40 @@ open class HTTPServer : NSObject {
                     return false;
                 }
                 
-                // need to check for overflow
-                guard let chunkSize = hexToInt(withHexString:&tokens[0]) else {
-                    print("failed to convert hex chunk size to int");
-                    return false;
-                }
+                var chunkSize:Int!;
                 
-                // no more chunks but there are possible footers
-                if chunkSize != 0 {
-                    // next line contains request body
-                    if client.requestBody == nil {
-                        client.requestBody = [String]();
-                    }
-                    
-                    // invalid to receive a non-zero chunk size followed by no content
-                    guard (i+1) < lines.count else {
-                        // TODO: send invalid response
+                // check if last chunk received was chunk size or not
+                if client.expectedChunkSize < 0 {
+                    chunkSize = hexToInt(withHexString:&tokens[0]);
+                    guard chunkSize != nil else {
+                        print("failed to convert hex chunk size to int");
                         return false;
                     }
                     
-                    client.requestBody!.append(lines[i+1]);
-                    print("Chunk size: \(chunkSize)");
+                    // if this is the last line, store the chunk size for next chunks received
+                    client.expectedChunkSize = chunkSize;
                 } else {
-                    footerIndex = i + 1;
-                    break;
+                    chunkSize = client.expectedChunkSize;
+                    
+                    // no more chunks but there are possible footers
+                    if chunkSize != 0 {
+                        // next line contains request body
+                        if client.requestBody == nil {
+                            client.requestBody = [String]();
+                        }
+                        
+                        client.requestBody!.append(lines[i]);
+                        client.currChunkSize += lines[i].characters.count;
+                        
+                        // check if we can get next chunk size
+                        if client.currChunkSize == client.expectedChunkSize {
+                            client.expectedChunkSize = -1;
+                            client.currChunkSize = 0;
+                        }
+                    } else {
+                        footerIndex = i + 1;
+                        break;
+                    }
                 }
             }
             
@@ -258,6 +271,7 @@ open class HTTPServer : NSObject {
         // initial line should contain URI & method
         let lines = client.rawRequest.components(separatedBy: "\r\n");
         var tokens = lines[0].components(separatedBy: " ");
+        
         guard tokens.count >= 2 else {
             print("Initial request line is invalid");
             dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter:router);
@@ -266,16 +280,16 @@ open class HTTPServer : NSObject {
         }
         
         // set URI and HTTP methods parsed from request
-        client.requestHeader["METHOD"] = tokens[0].removingPercentEncoding!;
-        client.requestHeader["URI"] = tokens[1].removingPercentEncoding!;
-        client.requestHeader["VERSION"] = tokens[2].removingPercentEncoding!;
+        client.requestHeader["METHOD"] = tokens[0].removingPercentEncoding!.replacingOccurrences(of: " ", with: "");
+        client.requestHeader["URI"] = tokens[1].removingPercentEncoding!.replacingOccurrences(of: " ", with: "");
+        client.requestHeader["VERSION"] = tokens[2].removingPercentEncoding!.replacingOccurrences(of: " ", with: "");
                 
         // flag indicating if complete request was received
         var processRequestFlag = true;
         
         // process the other HTTP header entries
         for i in 1...(lines.count - 1) {
-            // full request header received. "\r" separates header from body
+            // full request header received. two empty separates header from body
             if lines[i] == "" {
                 let bodyArr = Array(lines[(i+1)...(lines.count-1)]);
                 
@@ -310,6 +324,10 @@ open class HTTPServer : NSObject {
                     client.requestHeader[tokens[0]] = "";
                     continue;
                 }
+                
+                // strip white space from tokens
+                tokens[0] = tokens[0].replacingOccurrences(of: " ", with: "");
+                tokens[1] = tokens[1].replacingOccurrences(of: " ", with: "");
 
                 client.requestHeader[tokens[0]] = tokens[1];
             }
@@ -323,13 +341,12 @@ open class HTTPServer : NSObject {
             return;
         }
         
-        
         // if HTTP 1.1, send 100 response for valid request header
         if client.requestHeader["VERSION"] == "HTTP/1.1" &&
             client.requestHeader["Expect"] == "100-continue" {
             let responseClient = ClientObject();
             responseClient.fd = client.fd;
-            dispatcher.createStatusCodeResponse(withStatusCode: "100", forClient: responseClient, withRouter: router);
+            client.response = dispatcher.addResponseHeader(forResponse: "", withStatusCode: "100");
             scheduler.scheduleResponse(forClient: responseClient);
         }
         
@@ -385,7 +402,7 @@ open class HTTPServer : NSObject {
                     // add to connected clients set
                     connectedClients.add(clientSock);
                 } else if Int32(kEventList[i].filter) == EVFILT_READ {  // client sending data
-                        var recvBuf = [UInt8](repeating: 0, count: 2048);
+                        let recvBuf = [UInt8](repeating: 0, count: 2048);
                         let clientDesc = Int32(kEventList[i].ident);
                         var numBytes = 0;
                     
@@ -394,6 +411,8 @@ open class HTTPServer : NSObject {
                         guard numBytes >= 0 else {
                             perror("recv");
                             close(clientDesc);
+                            tempRequestList[clientDesc] = nil;
+                            connectedClients.remove(clientDesc);
                             return;
                         }
                         print("Bytes received: \(numBytes)");
@@ -403,7 +422,7 @@ open class HTTPServer : NSObject {
                             print("no bytes found, closing");
                             close(clientDesc);
                             tempRequestList[clientDesc] = nil;
-                                connectedClients.remove(clientDesc);
+                            connectedClients.remove(clientDesc);
                             return;
                         }
                     
@@ -440,7 +459,11 @@ open class HTTPServer : NSObject {
                             
                             // if full body has been set, process the request
                             if parseMessageBody(lines, forClient: client) {
-                                processRequest(forClient: client);
+                                
+                                // already routed if chunked-encoding in parseRequest
+                                if client.usesChunkedEncoding == false {
+                                    processRequest(forClient: client);
+                                }
                             }
                             
                             // clear receive buffer

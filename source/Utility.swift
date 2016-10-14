@@ -27,10 +27,14 @@ func createKernelEvent(withDescriptor socket:Int32) -> kevent {
 /**
     Convert hex string to Int
 */
+//TODO: Add throws for error
 func hexToInt(withHexString hexString:inout String) -> Int? {
     var ret = 0;
     hexString = hexString.uppercased();
     for hexChar in hexString.characters {
+        if ret > Int.max/16 {
+            return nil;
+        }
         ret *= 16;
         
         switch hexChar {

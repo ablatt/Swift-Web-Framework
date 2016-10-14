@@ -42,7 +42,7 @@ h.addPOSTRoute("/after_post", withCallback: { (request: ClientObject) -> String 
     var page =  "success in serving POST request\n"
                     ;
     guard request.formData != nil else {
-        return "no form detected";
+        return "no form detected\n";
     }
     
     for entries in request.formData! {

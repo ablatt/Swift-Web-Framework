@@ -19,7 +19,9 @@ public class ClientObject {
     
     // chunked-transfer encoding data
     internal var usesChunkedEncoding = false;
-    internal var chunkedFooter:Dictionary<String, String>?
+    internal var chunkedFooter:Dictionary<String, String>?;
+    internal var expectedChunkSize:Int = -1;
+    internal var currChunkSize:Int = 0;
     
     // response data
     public var responseHeader:Dictionary<String, String>!;         // dictionary of response header values
