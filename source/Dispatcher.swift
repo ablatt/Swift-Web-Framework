@@ -27,9 +27,10 @@ class Dispatcher : NSObject {
         }
         header += "\r\n";
         
+        //let urlEncodedSize = response.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)!.characters.count;
         // add Content-Length
         let numBytes = response.characters.count;
-        header += "Content-Length: \(numBytes)\r\n";
+        header += "Content-Length:\(numBytes)\r\n";
         
         // add time header
         

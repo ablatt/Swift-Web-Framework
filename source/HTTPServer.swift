@@ -346,7 +346,7 @@ open class HTTPServer : NSObject {
             client.requestHeader["Expect"] == "100-continue" {
             let responseClient = ClientObject();
             responseClient.fd = client.fd;
-            client.response = dispatcher.addResponseHeader(forResponse: "", withStatusCode: "100");
+            responseClient.response = dispatcher.addResponseHeader(forResponse: "", withStatusCode: "100");
             scheduler.scheduleResponse(forClient: responseClient);
         }
         
