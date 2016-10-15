@@ -283,7 +283,30 @@ open class HTTPServer : NSObject {
         client.requestHeader["METHOD"] = tokens[0].removingPercentEncoding!.replacingOccurrences(of: " ", with: "");
         client.requestHeader["URI"] = tokens[1].removingPercentEncoding!.replacingOccurrences(of: " ", with: "");
         client.requestHeader["VERSION"] = tokens[2].removingPercentEncoding!.replacingOccurrences(of: " ", with: "");
-                
+        
+        // check if URL is absolute URL
+        if client.requestHeader["URI"] != nil,
+            client.requestHeader["URI"]!.contains("http://") {
+            // separate tokens by "//"
+            let urlTokens = client.requestHeader["URI"]!.components(separatedBy: "//");
+            guard urlTokens.count >= 2 else {
+                print("Initial request line is invalid");
+                dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter:router);
+                scheduler.scheduleResponse(forClient: client);
+                return;
+            }
+            
+            // separate tokens by '/' to grab to path
+            let pathTokens = urlTokens[1].components(separatedBy: "/");
+            guard pathTokens.count >= 2 else {
+                print("Initial request line is invalid");
+                dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter:router);
+                scheduler.scheduleResponse(forClient: client);
+                return;
+            }
+            client.requestHeader["URI"] = pathTokens[1];
+        }
+        
         // flag indicating if complete request was received
         var processRequestFlag = true;
         
