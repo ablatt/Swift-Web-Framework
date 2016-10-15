@@ -15,19 +15,15 @@ class Dispatcher : NSObject {
      */
     //TODO: Add more HTTP headers
     func addResponseHeader(forResponse response:String, withStatusCode statusCode:String) -> String {
-        // create HTTP-message
+        // create status-line
         var header = "HTTP/1.1 ";
-        switch statusCode {
-        case "100":
-            header += statusCode + " Continue"
-        case "200":
-            header += statusCode + " OK";
-        default:
-            header += statusCode + " Bad Request";
+        header += statusCode + " ";
+        if let description = httpStatusCodes[statusCode] {
+            header += description;
+            print(description);
         }
         header += "\r\n";
         
-        //let urlEncodedSize = response.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)!.characters.count;
         // add Content-Length
         let numBytes = response.characters.count;
         header += "Content-Length:\(numBytes)\r\n";

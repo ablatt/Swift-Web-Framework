@@ -52,4 +52,7 @@ h.addPOSTRoute("/after_post", withCallback: { (request: ClientObject) -> String 
     return page;
 });
 
+h.addPOSTRoute("/curl-post") {_ in 
+    return "success in posting\n";
+}
 h.startServer(onPort: 9002);
