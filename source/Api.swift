@@ -16,7 +16,7 @@ public typealias MiddlewareClosure = (ClientObject) -> Bool;
     Protocol defining the public API
  */
 protocol HTTPServerAPI {
-    func readFile(_ file:String) throws -> [String];
+    // Main API
     func addGETRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
     func addHEADRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
     func addPOSTRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
@@ -29,6 +29,10 @@ protocol HTTPServerAPI {
     func addHOSTRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
     func addMiddleware(forHost host:String, withMiddlewareHandler middleware:@escaping MiddlewareClosure);
     func addStatusCodeHandler(_ handler:@escaping StatusCodeClosure, forStatusCode statusCode:String);
+    func startServer(onPort port:in_port_t);
+
+    // Utility API
+    func readFile(_ file:String) throws -> [String];
 }
 
 /**
@@ -170,5 +174,35 @@ extension HTTPServer: HTTPServerAPI {
         }
         self.scheduler.scheduleResponse(forClient: client)
     }
+    
+    /**
+        API to parse form data from message body
+     */
+    public func parseFormData2(FromRequest request:[String], startingAtIndex index:Int) -> Dictionary<String, String> {
+        var formData = Dictionary<String, String>();
+        
+        // iterate through all the lines containing form data and extract
+        for i in index...(request.count - 1) {
+            // different form data is delimited by &
+            let postEntries = request[i].components(separatedBy: "&");
+            for j in 0...(postEntries.count - 1) {
+                let formPair = postEntries[j].components(separatedBy: "=");
+                guard formPair.count == 2 else {
+                    formData[formPair[0]] = "";
+                    continue;
+                }
+                formData[formPair[0]] = formPair[1];
+            }
+        }
+        return formData;
+    }
+    
+    /**
+        API to start HTTP server on user defined port
+     */
+    func startServer(onPort usersPort:in_port_t) {
+        beginListening(onPort: usersPort);
+    }
+
 }
 

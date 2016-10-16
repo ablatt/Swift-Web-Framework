@@ -9,10 +9,10 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
-		<key>Swift Web Framework.xcscheme</key>
+		<key>SwiftWebFramework.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>1</integer>
+			<integer>2</integer>
 		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
@@ -23,6 +23,11 @@
 			<true/>
 		</dict>
 		<key>CE2AA0381D6CFBCD00F918B4</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>CE6796FF1DB351CB0052BDBB</key>
 		<dict>
 			<key>primary</key>
 			<true/>

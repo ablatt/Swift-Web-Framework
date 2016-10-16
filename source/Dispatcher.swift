@@ -9,28 +9,41 @@
 import Foundation
 
 class Dispatcher : NSObject {
+    let dateFormatter:DateFormatter!;
+    
+    override init() {
+        // dateformatter should be cached per the Data Formatting Guide
+        dateFormatter = DateFormatter()
+        dateFormatter.locale = NSLocale(localeIdentifier: "en_US_POSIX") as Locale!
+        dateFormatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        dateFormatter.timeZone = TimeZone(abbreviation: "GMT")
+    }
     
     /**
         Create the response header
      */
-    //TODO: Add more HTTP headers
+    //TODO: Use client response header since users will be able to customize the response headers in the future
     func addResponseHeader(forResponse response:String, withStatusCode statusCode:String) -> String {
-        // create HTTP-message
+        // create status-line
         var header = "HTTP/1.1 ";
-        switch statusCode {
-        case "200":
-            header += statusCode + " OK";
-        default:
-            header += statusCode + " Bad Request";
+        header += statusCode + " ";
+        if let description = httpStatusCodes[statusCode] {
+            header += description;
+            print(description);
         }
         header += "\r\n";
         
-        // add Content-Length
-        let numBytes = response.characters.count;
-        header += "Content-Length: \(numBytes)\r\n";
+        // add 'Content-Length' if response is non-zero
+        if response.characters.count > 0 {
+            let numBytes = response.characters.count;
+            header += "Content-Length:\(numBytes)\r\n";
+        }
         
-        // add time header
+        // add 'Date' header (required for HTTP/1.1)
+        let date = Date()
+        header += "Date:\(dateFormatter.string(from: date))\r\n"
         
+        // add CRLF between header and at the bottom of the body
         return header + "\r\n" + response + "\r\n";
     }
     
@@ -43,7 +56,7 @@ class Dispatcher : NSObject {
             return;
         }
         
-        client.response = addResponseHeader(forResponse: router.statusCodeHandler["400"]!(client), withStatusCode: statusCode);
+        client.response = addResponseHeader(forResponse: router.statusCodeHandler[statusCode]!(client), withStatusCode: statusCode);
     }
     
     /**
@@ -51,6 +64,6 @@ class Dispatcher : NSObject {
      */
     internal func createResponseForClient(_ client:ClientObject, withCallback callback:RouteClosure) {
         let response = callback(client);
-        client.response = addResponseHeader(forResponse: response, withStatusCode: "400");
+        client.response = addResponseHeader(forResponse: response, withStatusCode: "200");
     }
 }
