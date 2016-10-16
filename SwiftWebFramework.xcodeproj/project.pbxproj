@@ -8,26 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		CE14E9551D9A4A040089659E /* ResponseStatusCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */; };
-		CE14E9591DA0470C0089659E /* ResponseStatusCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */; };
 		CE14E9731DA1BAC00089659E /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9721DA1BAC00089659E /* Router.swift */; };
-		CE14E9741DA1BAC00089659E /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9721DA1BAC00089659E /* Router.swift */; };
 		CE14E9761DA22FB50089659E /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9751DA22FB50089659E /* Scheduler.swift */; };
-		CE14E9771DA22FB50089659E /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9751DA22FB50089659E /* Scheduler.swift */; };
 		CE14E9B91DA37DBF0089659E /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9B81DA37DBF0089659E /* Dispatcher.swift */; };
-		CE14E9BA1DA37DBF0089659E /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9B81DA37DBF0089659E /* Dispatcher.swift */; };
+		CE6797081DB351EC0052BDBB /* Api.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFD1D6D5FAD00CF56EE /* Api.swift */; };
+		CE6797091DB351EC0052BDBB /* ClientObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFC07C51D749CA400A3FB6D /* ClientObject.swift */; };
+		CE67970A1DB351EC0052BDBB /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9B81DA37DBF0089659E /* Dispatcher.swift */; };
+		CE67970B1DB351EC0052BDBB /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */; };
+		CE67970C1DB351EC0052BDBB /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */; };
+		CE67970D1DB351EC0052BDBB /* ResponseStatusCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9541D9A4A040089659E /* ResponseStatusCodes.swift */; };
+		CE67970E1DB351EC0052BDBB /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9721DA1BAC00089659E /* Router.swift */; };
+		CE67970F1DB351EC0052BDBB /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE14E9751DA22FB50089659E /* Scheduler.swift */; };
+		CE6797101DB351EC0052BDBB /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0D001D6D5FAD00CF56EE /* Utility.swift */; };
+		CE6797111DB351F80052BDBB /* Api.swift in Headers */ = {isa = PBXBuildFile; fileRef = CEAA0CFD1D6D5FAD00CF56EE /* Api.swift */; settings = {ATTRIBUTES = (Public, ); }; };
 		CEAA0D011D6D5FAD00CF56EE /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */; };
 		CEAA0D021D6D5FAD00CF56EE /* Api.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFD1D6D5FAD00CF56EE /* Api.swift */; };
 		CEAA0D031D6D5FAD00CF56EE /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFE1D6D5FAD00CF56EE /* main.swift */; };
 		CEAA0D041D6D5FAD00CF56EE /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */; };
 		CEAA0D051D6D5FAD00CF56EE /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0D001D6D5FAD00CF56EE /* Utility.swift */; };
-		CEE1FF8F1D7088EC009048E0 /* Swift Web Framework.h in Headers */ = {isa = PBXBuildFile; fileRef = CEE1FF8E1D7088EC009048E0 /* Swift Web Framework.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		CEE1FF941D7088F5009048E0 /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */; };
-		CEE1FF961D7088F5009048E0 /* Api.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFD1D6D5FAD00CF56EE /* Api.swift */; };
-		CEE1FF971D7088F5009048E0 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFE1D6D5FAD00CF56EE /* main.swift */; };
-		CEE1FF981D7088F5009048E0 /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */; };
-		CEE1FF991D7088F5009048E0 /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA0D001D6D5FAD00CF56EE /* Utility.swift */; };
 		CEFC07C61D749CA400A3FB6D /* ClientObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFC07C51D749CA400A3FB6D /* ClientObject.swift */; };
-		CEFC07C71D79EC5300A3FB6D /* ClientObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFC07C51D749CA400A3FB6D /* ClientObject.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -48,14 +47,14 @@
 		CE14E9751DA22FB50089659E /* Scheduler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Scheduler.swift; sourceTree = "<group>"; };
 		CE14E9B81DA37DBF0089659E /* Dispatcher.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Dispatcher.swift; sourceTree = "<group>"; };
 		CE2AA0261D6A0B3900F918B4 /* Swift Web Framework Console */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Swift Web Framework Console"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE6797001DB351CB0052BDBB /* SwiftWebFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SwiftWebFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE6797021DB351CB0052BDBB /* SwiftWebFramework.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SwiftWebFramework.h; sourceTree = "<group>"; };
+		CE6797031DB351CB0052BDBB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CEAA0CFC1D6D5FAD00CF56EE /* HTTPServer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = HTTPServer.swift; path = source/HTTPServer.swift; sourceTree = SOURCE_ROOT; };
 		CEAA0CFD1D6D5FAD00CF56EE /* Api.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Api.swift; path = source/Api.swift; sourceTree = SOURCE_ROOT; };
 		CEAA0CFE1D6D5FAD00CF56EE /* main.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = main.swift; path = source/main.swift; sourceTree = SOURCE_ROOT; };
 		CEAA0CFF1D6D5FAD00CF56EE /* Queue.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Queue.swift; path = source/Queue.swift; sourceTree = SOURCE_ROOT; };
 		CEAA0D001D6D5FAD00CF56EE /* Utility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Utility.swift; path = source/Utility.swift; sourceTree = SOURCE_ROOT; };
-		CEE1FF8C1D7088EC009048E0 /* SwiftWebFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SwiftWebFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		CEE1FF8E1D7088EC009048E0 /* Swift Web Framework.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Swift Web Framework.h"; sourceTree = "<group>"; };
-		CEE1FF901D7088EC009048E0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CEFC07C51D749CA400A3FB6D /* ClientObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClientObject.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -67,7 +66,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		CEE1FF881D7088EC009048E0 /* Frameworks */ = {
+		CE6796FC1DB351CB0052BDBB /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -81,7 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				CE2AA0281D6A0B3900F918B4 /* source */,
-				CEE1FF8D1D7088EC009048E0 /* Swift Web Framework */,
+				CE6797011DB351CB0052BDBB /* SwiftWebFramework */,
 				CE2AA0271D6A0B3900F918B4 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,7 +89,7 @@
 			isa = PBXGroup;
 			children = (
 				CE2AA0261D6A0B3900F918B4 /* Swift Web Framework Console */,
-				CEE1FF8C1D7088EC009048E0 /* SwiftWebFramework.framework */,
+				CE6797001DB351CB0052BDBB /* SwiftWebFramework.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -112,23 +111,23 @@
 			path = source;
 			sourceTree = "<group>";
 		};
-		CEE1FF8D1D7088EC009048E0 /* Swift Web Framework */ = {
+		CE6797011DB351CB0052BDBB /* SwiftWebFramework */ = {
 			isa = PBXGroup;
 			children = (
-				CEE1FF8E1D7088EC009048E0 /* Swift Web Framework.h */,
-				CEE1FF901D7088EC009048E0 /* Info.plist */,
+				CE6797021DB351CB0052BDBB /* SwiftWebFramework.h */,
+				CE6797031DB351CB0052BDBB /* Info.plist */,
 			);
-			path = "Swift Web Framework";
+			path = SwiftWebFramework;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		CEE1FF891D7088EC009048E0 /* Headers */ = {
+		CE6796FD1DB351CB0052BDBB /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CEE1FF8F1D7088EC009048E0 /* Swift Web Framework.h in Headers */,
+				CE6797111DB351F80052BDBB /* Api.swift in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,22 +151,22 @@
 			productReference = CE2AA0261D6A0B3900F918B4 /* Swift Web Framework Console */;
 			productType = "com.apple.product-type.tool";
 		};
-		CEE1FF8B1D7088EC009048E0 /* Swift Web Framework */ = {
+		CE6796FF1DB351CB0052BDBB /* SwiftWebFramework */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CEE1FF911D7088EC009048E0 /* Build configuration list for PBXNativeTarget "Swift Web Framework" */;
+			buildConfigurationList = CE6797051DB351CB0052BDBB /* Build configuration list for PBXNativeTarget "SwiftWebFramework" */;
 			buildPhases = (
-				CEE1FF871D7088EC009048E0 /* Sources */,
-				CEE1FF881D7088EC009048E0 /* Frameworks */,
-				CEE1FF891D7088EC009048E0 /* Headers */,
-				CEE1FF8A1D7088EC009048E0 /* Resources */,
+				CE6796FB1DB351CB0052BDBB /* Sources */,
+				CE6796FC1DB351CB0052BDBB /* Frameworks */,
+				CE6796FD1DB351CB0052BDBB /* Headers */,
+				CE6796FE1DB351CB0052BDBB /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = "Swift Web Framework";
-			productName = "Swift Web Framework";
-			productReference = CEE1FF8C1D7088EC009048E0 /* SwiftWebFramework.framework */;
+			name = SwiftWebFramework;
+			productName = SwiftWebFramework;
+			productReference = CE6797001DB351CB0052BDBB /* SwiftWebFramework.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
@@ -184,9 +183,9 @@
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 0800;
 					};
-					CEE1FF8B1D7088EC009048E0 = {
-						CreatedOnToolsVersion = 7.3.1;
-						LastSwiftMigration = 0800;
+					CE6796FF1DB351CB0052BDBB = {
+						CreatedOnToolsVersion = 8.0;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -203,13 +202,13 @@
 			projectRoot = "";
 			targets = (
 				CE2AA0251D6A0B3900F918B4 /* Swift Web Framework Console */,
-				CEE1FF8B1D7088EC009048E0 /* Swift Web Framework */,
+				CE6796FF1DB351CB0052BDBB /* SwiftWebFramework */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		CEE1FF8A1D7088EC009048E0 /* Resources */ = {
+		CE6796FE1DB351CB0052BDBB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -236,20 +235,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		CEE1FF871D7088EC009048E0 /* Sources */ = {
+		CE6796FB1DB351CB0052BDBB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE14E9741DA1BAC00089659E /* Router.swift in Sources */,
-				CE14E9591DA0470C0089659E /* ResponseStatusCodes.swift in Sources */,
-				CE14E9771DA22FB50089659E /* Scheduler.swift in Sources */,
-				CEFC07C71D79EC5300A3FB6D /* ClientObject.swift in Sources */,
-				CE14E9BA1DA37DBF0089659E /* Dispatcher.swift in Sources */,
-				CEE1FF941D7088F5009048E0 /* HTTPServer.swift in Sources */,
-				CEE1FF961D7088F5009048E0 /* Api.swift in Sources */,
-				CEE1FF971D7088F5009048E0 /* main.swift in Sources */,
-				CEE1FF981D7088F5009048E0 /* Queue.swift in Sources */,
-				CEE1FF991D7088F5009048E0 /* Utility.swift in Sources */,
+				CE6797081DB351EC0052BDBB /* Api.swift in Sources */,
+				CE6797091DB351EC0052BDBB /* ClientObject.swift in Sources */,
+				CE67970A1DB351EC0052BDBB /* Dispatcher.swift in Sources */,
+				CE67970B1DB351EC0052BDBB /* HTTPServer.swift in Sources */,
+				CE67970C1DB351EC0052BDBB /* Queue.swift in Sources */,
+				CE67970D1DB351EC0052BDBB /* ResponseStatusCodes.swift in Sources */,
+				CE67970E1DB351EC0052BDBB /* Router.swift in Sources */,
+				CE67970F1DB351EC0052BDBB /* Scheduler.swift in Sources */,
+				CE6797101DB351EC0052BDBB /* Utility.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -364,9 +362,11 @@
 			};
 			name = Release;
 		};
-		CEE1FF921D7088EC009048E0 /* Debug */ = {
+		CE6797061DB351CB0052BDBB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -375,21 +375,25 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
-				INFOPLIST_FILE = "Swift Web Framework/Info.plist";
+				INFOPLIST_FILE = SwiftWebFramework/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "user.Swift-Web-Framework";
-				PRODUCT_NAME = SwiftWebFramework;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				PRODUCT_BUNDLE_IDENTIFIER = "Apple--Inc.SwiftWebFramework";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 3.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
 			name = Debug;
 		};
-		CEE1FF931D7088EC009048E0 /* Release */ = {
+		CE6797071DB351CB0052BDBB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -398,11 +402,12 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
-				INFOPLIST_FILE = "Swift Web Framework/Info.plist";
+				INFOPLIST_FILE = SwiftWebFramework/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "user.Swift-Web-Framework";
-				PRODUCT_NAME = SwiftWebFramework;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				PRODUCT_BUNDLE_IDENTIFIER = "Apple--Inc.SwiftWebFramework";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 3.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -431,14 +436,13 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CEE1FF911D7088EC009048E0 /* Build configuration list for PBXNativeTarget "Swift Web Framework" */ = {
+		CE6797051DB351CB0052BDBB /* Build configuration list for PBXNativeTarget "SwiftWebFramework" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				CEE1FF921D7088EC009048E0 /* Debug */,
-				CEE1FF931D7088EC009048E0 /* Release */,
+				CE6797061DB351CB0052BDBB /* Debug */,
+				CE6797071DB351CB0052BDBB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

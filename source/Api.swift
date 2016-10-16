@@ -16,7 +16,7 @@ public typealias MiddlewareClosure = (ClientObject) -> Bool;
     Protocol defining the public API
  */
 protocol HTTPServerAPI {
-    func readFile(_ file:String) throws -> [String];
+    // Main API
     func addGETRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
     func addHEADRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
     func addPOSTRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
@@ -29,6 +29,10 @@ protocol HTTPServerAPI {
     func addHOSTRoute(_ route:String, forHost host:String, withCallback callback: @escaping RouteClosure);
     func addMiddleware(forHost host:String, withMiddlewareHandler middleware:@escaping MiddlewareClosure);
     func addStatusCodeHandler(_ handler:@escaping StatusCodeClosure, forStatusCode statusCode:String);
+    func startServer(onPort port:in_port_t);
+
+    // Utility API
+    func readFile(_ file:String) throws -> [String];
 }
 
 /**
@@ -192,5 +196,13 @@ extension HTTPServer: HTTPServerAPI {
         }
         return formData;
     }
+    
+    /**
+        API to start HTTP server on user defined port
+     */
+    func startServer(onPort usersPort:in_port_t) {
+        beginListening(onPort: usersPort);
+    }
+
 }
 

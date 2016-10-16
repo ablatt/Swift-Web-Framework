@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CEE1FF8B1D7088EC009048E0"
+               BlueprintIdentifier = "CE6796FF1DB351CB0052BDBB"
                BuildableName = "SwiftWebFramework.framework"
-               BlueprintName = "Swift Web Framework"
+               BlueprintName = "SwiftWebFramework"
                ReferencedContainer = "container:SwiftWebFramework.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,9 +45,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CEE1FF8B1D7088EC009048E0"
+            BlueprintIdentifier = "CE6796FF1DB351CB0052BDBB"
             BuildableName = "SwiftWebFramework.framework"
-            BlueprintName = "Swift Web Framework"
+            BlueprintName = "SwiftWebFramework"
             ReferencedContainer = "container:SwiftWebFramework.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -63,9 +63,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CEE1FF8B1D7088EC009048E0"
+            BlueprintIdentifier = "CE6796FF1DB351CB0052BDBB"
             BuildableName = "SwiftWebFramework.framework"
-            BlueprintName = "Swift Web Framework"
+            BlueprintName = "SwiftWebFramework"
             ReferencedContainer = "container:SwiftWebFramework.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

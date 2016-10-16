@@ -520,7 +520,7 @@ open class HTTPServer : NSObject {
     /**
         Starts the HTTP server
      */
-    func startServer(onPort port:in_port_t) {
+    internal func beginListening(onPort port:in_port_t) {
         // create timer to poll for respones to send
         let timer1 = Timer(timeInterval: POLL_TIME, target: scheduler, selector: #selector(scheduler.sendResponse), userInfo: connectedClients, repeats: true);
         let timer2 = Timer(timeInterval: POLL_TIME, target: self, selector: #selector(self.serverEventLoop), userInfo: nil, repeats: true);
