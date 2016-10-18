@@ -57,11 +57,21 @@ internal class Router: NSObject {
             if GETRoutes[host] == nil || GETRoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
             }
+            
+            // check if route has been registered for default host
+            guard GETRoutes[host] != nil else {
+                return nil;
+            }
             callback = GETRoutes[host]![URI];
         case "HEAD":
             // host name is not specified, fallback to default host name
             if HEADRoutes[host] == nil || HEADRoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
+            }
+            
+            // check if route has been registered for default host
+            guard HEADRoutes[host] != nil else {
+                return nil;
             }
             callback = HEADRoutes[host]![URI];
         case "POST":
@@ -69,11 +79,21 @@ internal class Router: NSObject {
             if POSTRoutes[host] == nil || POSTRoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
             }
+            
+            // check if route has been registered for default host
+            guard POSTRoutes[host] != nil else {
+                return nil;
+            }
             callback = POSTRoutes[host]![URI];
         case "PUT":
             // host name is not specified, fallback to default host name
             if PUTRoutes[host] == nil || PUTRoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
+            }
+            
+            // check if route has been registered for default host
+            guard PUTRoutes[host] != nil else {
+                return nil;
             }
             callback = PUTRoutes[host]![URI];
         case "DELETE":
@@ -81,11 +101,21 @@ internal class Router: NSObject {
             if DELETERoutes[host] == nil || DELETERoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
             }
+            
+            // check if route has been registered for default host
+            guard DELETERoutes[host] != nil else {
+                return nil;
+            }
             callback = DELETERoutes[host]![URI];
         case "TRACE":
             // host name is not specified, fallback to default host name
             if TRACERoutes[host] == nil || TRACERoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
+            }
+            
+            // check if route has been registered for default host
+            guard TRACERoutes[host] != nil else {
+                return nil;
             }
             callback = TRACERoutes[host]![URI];
         case "OPTIONS":
@@ -93,11 +123,21 @@ internal class Router: NSObject {
             if OPTIONSRoutes[host] == nil || OPTIONSRoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
             }
+            
+            // check if route has been registered for default host
+            guard OPTIONSRoutes[host] != nil else {
+                return nil;
+            }
             callback = OPTIONSRoutes[host]![URI];
         case "CONNECT":
             // host name is not specified, fallback to default host name
             if CONNECTRoutes[host] == nil || CONNECTRoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
+            }
+            
+            // check if route has been registered for default host
+            guard CONNECTRoutes[host] != nil else {
+                return nil;
             }
             callback = CONNECTRoutes[host]![URI];
         case "PATCH":
@@ -105,11 +145,21 @@ internal class Router: NSObject {
             if PATCHRoutes[host] == nil || PATCHRoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
             }
+            
+            // check if route has been registered for default host
+            guard PATCHRoutes[host] != nil else {
+                return nil;
+            }
             callback = PATCHRoutes[host]![URI];
         case "HOST":
             // host name is not specified, fallback to default host name
             if HOSTRoutes[host] == nil || HOSTRoutes[host]![URI] == nil {
                 host = DEFAULT_HOST_NAME;
+            }
+            
+            // check if route has been registered for default host
+            guard HOSTRoutes[host] != nil else {
+                return nil;
             }
             callback = HOSTRoutes[host]![URI];
         default:

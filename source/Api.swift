@@ -200,7 +200,7 @@ extension HTTPServer: HTTPServerAPI {
     /**
         API to start HTTP server on user defined port
      */
-    func startServer(onPort usersPort:in_port_t) {
+    public func startServer(onPort usersPort:in_port_t) {
         beginListening(onPort: usersPort);
     }
 
