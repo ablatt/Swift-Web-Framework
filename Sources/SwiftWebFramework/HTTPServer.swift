@@ -11,14 +11,20 @@ import Foundation
 import Glibc
 import Dispatch
 import CoreFoundation
+import epoll
 #else
 import Darwin
 #endif
 
+
 // globals
-internal let MAX_CONNECTIONS:Int32 = 1000
 internal let KQUEUE_TIMEOUT:Int = 100000;
 internal let KQUEUE_MAX_EVENTS = 32;
+    
+internal let EPOLL_TIMEOUT:Int32 = 0;
+internal let EPOLL_MAX_EVENTS:Int32 = 32;
+    
+internal let MAX_CONNECTIONS:Int32 = 1000
 internal let POLL_TIME = 0.00005;
 internal let DEFAULT_HOST_NAME = "localhost";
 internal typealias URIDictionary = Dictionary<String, RouteClosure>;
@@ -46,7 +52,11 @@ open class HTTPServer : NSObject {
     fileprivate var connectedClients = NSMutableSet();
     
     // socket variables
+    #if os(Linux)
+    fileprivate var ev:Int32 = -1;
+    #else
     fileprivate var kq:Int32 = -1;                      // kernel queue descriptor
+    #endif
     fileprivate var serverSock:Int32 = 0;               // server socket
     
     override init () {
@@ -361,10 +371,30 @@ open class HTTPServer : NSObject {
         }
     }
     
+  //MARK: Helpers for event network event loop
     /**
-        Function to handle read
+        Accept client
      */
-    func handleRead(forFileDescriptor clientDesc:Int32) {
+    func acceptClient() -> Int32 {
+        // accept incoming connection
+        var clientFd:Int32 = -1;
+        var clientInfo = sockaddr();
+        var clientInfoSize = socklen_t(MemoryLayout<sockaddr>.size);
+        clientFd = accept(self.serverSock, &clientInfo, &clientInfoSize);
+        guard clientFd > 0 else {
+            perror("accept");
+            return -1;
+        }
+        
+        // add to connected clients set
+        connectedClients.add(clientFd);
+        return clientFd;
+    }
+
+    /**
+     Function to read from client
+     */
+    func readFromClient(withFileDescriptor clientDesc:Int32) {
         let recvBuf = [UInt8](repeating: 0, count: 2048);
         var numBytes = 0;
         
@@ -445,14 +475,15 @@ open class HTTPServer : NSObject {
         else {
             print("***Received only partial request***");
         }
-
+        
     }
+
     
 //MARK: Event loop functions
+#if !os(Linux)
     /**
         Event loop for FreeBSD (macOS)
      */
-#if !os(Linux)
     @objc fileprivate func bsdEventLoop() {
         // create array to store returned kevents
         var kEventList = Array(repeating: kevent(), count: KQUEUE_MAX_EVENTS);
@@ -462,7 +493,7 @@ open class HTTPServer : NSObject {
         kTimeOut.tv_nsec = KQUEUE_TIMEOUT;
 
         // lock critical section of reading and converting buff to string
-        self.lockQueue.sync(execute: {
+        lockQueue.sync(execute: {
             // get kernel events
             let numEvents = kevent(self.kq, nil, 0, &kEventList, Int32(KQUEUE_MAX_EVENTS), &kTimeOut);
             guard numEvents != -1 else {
@@ -476,53 +507,97 @@ open class HTTPServer : NSObject {
             
             // iterate through all returned kernel events
             for i in 0...Int(numEvents - 1) {
-                if kEventList[i].ident == UInt(serverSock) {   // client attempting to connect
-                    // accept incoming connection
-                    var clientSock:Int32 = -1;
-                    var clientInfo = sockaddr();
-                    var clientInfoSize = socklen_t(MemoryLayout<sockaddr>.size);
-                    clientSock = accept(self.serverSock, &clientInfo, &clientInfoSize);
-                    guard clientSock > 0 else {
-                        perror("accept");
-                        continue;
-                    }
+                // client attempting to connect
+                if kEventList[i].ident == UInt(serverSock) {
+                    let clientFd = acceptClient();
                     
-                    // register new client socket with kqueue for reading
-                    var kEvent = createKernelEvent(withDescriptor: clientSock);
+                    // register new client socket with kqueue for reading events
+                    var kEvent = createKernelEvent(withDescriptor: clientFd);
                     guard kevent(self.kq, &kEvent, 1, nil, 0, nil) != -1 else {
                         perror("kevent");
-                        close(clientSock);
-                        continue;
+                        close(clientFd);
+                        return;
                     }
-                    
-                    // add to connected clients set
-                    connectedClients.add(clientSock);
-                } else if Int32(kEventList[i].filter) == EVFILT_READ {  // client sending data
+                }
+                // client sending data
+                else if Int32(kEventList[i].filter) == EVFILT_READ {
                     let clientDesc = Int32(kEventList[i].ident);
-                    handleRead(forFileDescriptor: clientDesc);
-                } else if Int32(kEventList[i].flags) == EV_EOF {
+                    readFromClient(withFileDescriptor: clientDesc);
+                }
+                // client closing connection
+                else if Int32(kEventList[i].flags) == EV_EOF {
                     close(Int32(kEventList[i].ident));
                     print("closed file descriptor \(kEventList[i].ident)");
-                } else {
+                }
+                // default fall through
+                else {
                     print("kernel event not recognized... skipping");
                 }
             }
         });
     }
-#endif
+#else
     /**
         Event loop for Linux
      */
-    @objc fileprivate func linuxEventLoop() {
-
-    }
+    fileprivate func linuxEventLoop() {
+        // wait for I/O events
+        var eEventList = Array(repeating: epoll_event(), count: Int(EPOLL_MAX_EVENTS));
     
+    
+        lockQueue.sync(execute: {
+            // get I/O events
+            let nfds = epoll_wait(ev, &eEventList, EPOLL_MAX_EVENTS, EPOLL_TIMEOUT);
+            guard nfds >= 0 else {
+                perror("epoll_wait");
+                return;
+            }
+    
+            if nfds == 0 {
+                return;
+            }
+    
+            print("got IO events");
+            // iterate through all the events
+            for i in 0...Int(nfds-1) {
+                let eEvent = eEventList[i];
+                // client attempting to connect
+                if eEvent.data.fd == self.serverSock {
+                    print("epoll client accept");
+                    let clientFd = acceptClient();
+    
+                    //TODO: Consider edge-triggered eent
+                    //setnonblocking(conn_sock);
+                    var clientEvent = epoll_event();
+                    clientEvent.events = EPOLLIN.rawValue;            // | EPOLLET;
+                    clientEvent.data.fd = clientFd;
+                    guard epoll_ctl(ev, EPOLL_CTL_ADD, clientFd, &clientEvent) >= 0 else {
+                        perror("epoll_ctl: conn_sock");
+                        continue;
+                    }
+                }
+                // client sending data
+                else if eEvent.events & unsafeBitCast(EPOLLIN, to: UInt32.self) != 0 {
+                    let clientDesc = Int32(eEventList[i].data.fd);
+                    readFromClient(withFileDescriptor: clientDesc);
+                }
+                // client closing connection
+                //else if events[i].events ==
+                else {
+                    let clientDesc = Int32(eEvent.data.fd);
+                    close(clientDesc);
+                }
+            }
+        });
+    }
+#endif
+
 //MARK: Methods exposed to user
     /**
         Starts the HTTP server
      */
     internal func beginListening(onPort port:in_port_t) {
-        print("setting up timers--");
+        print("Setting up timers.");
         // create timer to poll for respones to send
         let timer1:Timer!;
         let timer2:Timer!;
@@ -533,14 +608,14 @@ open class HTTPServer : NSObject {
         timer1 = Timer(timeInterval: POLL_TIME, repeats: true, block: { _ in
                 self.scheduler.sendResponse();
             });
-            timer2 = Timer(timeInterval: POLL_TIME, repeats: true, block: { _ in
+        timer2 = Timer(timeInterval: POLL_TIME, repeats: true, block: { _ in
                 self.linuxEventLoop();
             });
         #endif
         RunLoop.current.add(timer1, forMode: RunLoopMode.defaultRunLoopMode);
         RunLoop.current.add(timer2, forMode: RunLoopMode.defaultRunLoopMode);
         
-        print("setting up sockets");
+        print("Setting up sockets.");
         // create a tcp socket
         #if os(Linux)
         serverSock = socket(PF_INET, Int32(SOCK_STREAM.rawValue), 0);
@@ -582,9 +657,23 @@ open class HTTPServer : NSObject {
             return;
         }
         
-        // start event loop for IO multiplexing
-        #if !os(Linux)
-        self.kq = kqueue();
+        // setup network event multiplexing: kqueue for BSD systems and epoll for Linux systems
+        #if os(Linux)
+        ev = epoll_create1(0);
+        guard ev > 0 else {
+            perror("epoll_create1");
+            return;
+        }
+            
+        var eEvent = epoll_event();
+        eEvent.events = EPOLLIN.rawValue;
+        eEvent.data.fd = serverSock;
+        if (epoll_ctl(ev, EPOLL_CTL_ADD, serverSock, &eEvent) == -1) {
+            perror("epoll_ctl: listen_sock");
+            exit(EXIT_FAILURE);
+        }
+        #else
+        kq = kqueue();
         var kEvent = createKernelEvent(withDescriptor: serverSock);
         guard kevent(kq, &kEvent, 1, nil, 0, nil) != -1 else {
             perror("kevent");

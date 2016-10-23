@@ -7,41 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CE7D75301DB747B700CA84BC /* Api.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Api.swift /* Api.swift */; };
-		CE7D75311DB747B700CA84BC /* ClientObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/ClientObject.swift /* ClientObject.swift */; };
-		CE7D75321DB747B700CA84BC /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Dispatcher.swift /* Dispatcher.swift */; };
-		CE7D75331DB747B700CA84BC /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/HTTPServer.swift /* HTTPServer.swift */; };
-		CE7D75351DB747B700CA84BC /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Queue.swift /* Queue.swift */; };
-		CE7D75361DB747B700CA84BC /* ResponseStatusCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/ResponseStatusCodes.swift /* ResponseStatusCodes.swift */; };
-		CE7D75371DB747B700CA84BC /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Router.swift /* Router.swift */; };
-		CE7D75381DB747B700CA84BC /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Scheduler.swift /* Scheduler.swift */; };
-		CE7D75391DB747B700CA84BC /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Utility.swift /* Utility.swift */; };
-		__src_cc_ref_Sources/Api.swift /* Api.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Api.swift /* Api.swift */; };
-		__src_cc_ref_Sources/ClientObject.swift /* ClientObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/ClientObject.swift /* ClientObject.swift */; };
-		__src_cc_ref_Sources/Dispatcher.swift /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Dispatcher.swift /* Dispatcher.swift */; };
-		__src_cc_ref_Sources/HTTPServer.swift /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/HTTPServer.swift /* HTTPServer.swift */; };
-		__src_cc_ref_Sources/Queue.swift /* Queue.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Queue.swift /* Queue.swift */; };
-		__src_cc_ref_Sources/ResponseStatusCodes.swift /* ResponseStatusCodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/ResponseStatusCodes.swift /* ResponseStatusCodes.swift */; };
-		__src_cc_ref_Sources/Router.swift /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Router.swift /* Router.swift */; };
-		__src_cc_ref_Sources/Scheduler.swift /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Scheduler.swift /* Scheduler.swift */; };
-		__src_cc_ref_Sources/Utility.swift /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/Utility.swift /* Utility.swift */; };
-		__src_cc_ref_Sources/main.swift /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = __PBXFileRef_Sources/main.swift /* main.swift */; };
+		CE7D75541DBC99F100CA84BC /* SwiftWebFramework in Sources */ = {isa = PBXBuildFile; fileRef = CE7D75531DBC99E300CA84BC /* SwiftWebFramework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		CE7D75281DB7478800CA84BC /* SwiftWebFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SwiftWebFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE7D752B1DB7478800CA84BC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CE7D75531DBC99E300CA84BC /* SwiftWebFramework */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SwiftWebFramework; path = Sources/SwiftWebFramework; sourceTree = "<group>"; };
 		__PBXFileRef_Package.swift /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/Api.swift /* Api.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Api.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/ClientObject.swift /* ClientObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientObject.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/Dispatcher.swift /* Dispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dispatcher.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/HTTPServer.swift /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/Queue.swift /* Queue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Queue.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/ResponseStatusCodes.swift /* ResponseStatusCodes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseStatusCodes.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/Router.swift /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/Scheduler.swift /* Scheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scheduler.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/Utility.swift /* Utility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utility.swift; sourceTree = "<group>"; };
-		__PBXFileRef_Sources/main.swift /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		"__PBXFileRef_swift-web-framework.xcodeproj/Configs/Project.xcconfig" /* swift-web-framework.xcodeproj/Configs/Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "swift-web-framework.xcodeproj/Configs/Project.xcconfig"; sourceTree = "<group>"; };
 		"_____Product_swift_web_framework" /* swift-web-framework */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = "swift-web-framework"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -103,27 +76,9 @@
 		"_____Sources_" /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				"_______Group_swift_web_framework" /* swift-web-framework */,
+				CE7D75531DBC99E300CA84BC /* SwiftWebFramework */,
 			);
 			name = Sources;
-			sourceTree = "<group>";
-		};
-		"_______Group_swift_web_framework" /* swift-web-framework */ = {
-			isa = PBXGroup;
-			children = (
-				__PBXFileRef_Sources/Api.swift /* Api.swift */,
-				__PBXFileRef_Sources/ClientObject.swift /* ClientObject.swift */,
-				__PBXFileRef_Sources/Dispatcher.swift /* Dispatcher.swift */,
-				__PBXFileRef_Sources/HTTPServer.swift /* HTTPServer.swift */,
-				__PBXFileRef_Sources/main.swift /* main.swift */,
-				__PBXFileRef_Sources/Queue.swift /* Queue.swift */,
-				__PBXFileRef_Sources/ResponseStatusCodes.swift /* ResponseStatusCodes.swift */,
-				__PBXFileRef_Sources/Router.swift /* Router.swift */,
-				__PBXFileRef_Sources/Scheduler.swift /* Scheduler.swift */,
-				__PBXFileRef_Sources/Utility.swift /* Utility.swift */,
-			);
-			name = "swift-web-framework";
-			path = Sources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -220,15 +175,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE7D75301DB747B700CA84BC /* Api.swift in Sources */,
-				CE7D75311DB747B700CA84BC /* ClientObject.swift in Sources */,
-				CE7D75321DB747B700CA84BC /* Dispatcher.swift in Sources */,
-				CE7D75331DB747B700CA84BC /* HTTPServer.swift in Sources */,
-				CE7D75351DB747B700CA84BC /* Queue.swift in Sources */,
-				CE7D75361DB747B700CA84BC /* ResponseStatusCodes.swift in Sources */,
-				CE7D75371DB747B700CA84BC /* Router.swift in Sources */,
-				CE7D75381DB747B700CA84BC /* Scheduler.swift in Sources */,
-				CE7D75391DB747B700CA84BC /* Utility.swift in Sources */,
+				CE7D75541DBC99F100CA84BC /* SwiftWebFramework in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -236,16 +183,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				__src_cc_ref_Sources/Api.swift /* Api.swift in Sources */,
-				__src_cc_ref_Sources/ClientObject.swift /* ClientObject.swift in Sources */,
-				__src_cc_ref_Sources/Dispatcher.swift /* Dispatcher.swift in Sources */,
-				__src_cc_ref_Sources/HTTPServer.swift /* HTTPServer.swift in Sources */,
-				__src_cc_ref_Sources/main.swift /* main.swift in Sources */,
-				__src_cc_ref_Sources/Queue.swift /* Queue.swift in Sources */,
-				__src_cc_ref_Sources/ResponseStatusCodes.swift /* ResponseStatusCodes.swift in Sources */,
-				__src_cc_ref_Sources/Router.swift /* Router.swift in Sources */,
-				__src_cc_ref_Sources/Scheduler.swift /* Scheduler.swift in Sources */,
-				__src_cc_ref_Sources/Utility.swift /* Utility.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -425,6 +362,7 @@
 				CE7D752E1DB7478800CA84BC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
 		};
 		"___RootConfs_" /* Build configuration list for PBXProject "swift-web-framework" */ = {
 			isa = XCConfigurationList;
