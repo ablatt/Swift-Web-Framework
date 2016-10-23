@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "______Target_swift_web_framework"
-               BuildableName = "swift-web-framework"
-               BlueprintName = "swift-web-framework"
+               BuildableName = "Console App"
+               BlueprintName = "Console App"
                ReferencedContainer = "container:swift-web-framework.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -33,8 +33,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "______Target_swift_web_framework"
-            BuildableName = "swift-web-framework"
-            BlueprintName = "swift-web-framework"
+            BuildableName = "Console App"
+            BlueprintName = "Console App"
             ReferencedContainer = "container:swift-web-framework.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -56,8 +56,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "______Target_swift_web_framework"
-            BuildableName = "swift-web-framework"
-            BlueprintName = "swift-web-framework"
+            BuildableName = "Console App"
+            BlueprintName = "Console App"
             ReferencedContainer = "container:swift-web-framework.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -75,8 +75,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "______Target_swift_web_framework"
-            BuildableName = "swift-web-framework"
-            BlueprintName = "swift-web-framework"
+            BuildableName = "Console App"
+            BlueprintName = "Console App"
             ReferencedContainer = "container:swift-web-framework.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

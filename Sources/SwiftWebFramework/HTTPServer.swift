@@ -48,9 +48,8 @@ open class HTTPServer : NSObject {
     fileprivate let lockQueue = DispatchQueue(label: "httpserver.lock", attributes: []);
     
     // list of connected clients
-    fileprivate var tempRequestList = Dictionary<Int32, ClientObject>();
-    fileprivate var connectedClients = NSMutableSet();
-    
+    fileprivate var connectedClients = Dictionary<Int32, ClientObject>();
+
     // socket variables
     #if os(Linux)
     fileprivate var ev:Int32 = -1;
@@ -386,8 +385,6 @@ open class HTTPServer : NSObject {
             return -1;
         }
         
-        // add to connected clients set
-        connectedClients.add(clientFd);
         return clientFd;
     }
 
@@ -403,8 +400,7 @@ open class HTTPServer : NSObject {
         guard numBytes >= 0 else {
             perror("recv");
             close(clientDesc);
-            tempRequestList[clientDesc] = nil;
-            connectedClients.remove(clientDesc);
+            connectedClients[clientDesc] = nil;
             return;
         }
         print("Bytes received: \(numBytes)");
@@ -413,22 +409,21 @@ open class HTTPServer : NSObject {
         if numBytes == 0 {
             print("no bytes found, closing");
             close(clientDesc);
-            tempRequestList[clientDesc] = nil;
-            connectedClients.remove(clientDesc);
+            connectedClients[clientDesc] = nil;
             return;
         }
         
         // get client object from client list
         var client:ClientObject!;
-        if self.tempRequestList[clientDesc] == nil {
+        if self.connectedClients[clientDesc] == nil {
             client = ClientObject();
             
             // add to clients list
-            self.tempRequestList[clientDesc] = client;
+            self.connectedClients[clientDesc] = client;
             
             client.fd = clientDesc;
         } else {
-            client = self.tempRequestList[clientDesc];
+            client = self.connectedClients[clientDesc];
         }
         
         // append to raw request string

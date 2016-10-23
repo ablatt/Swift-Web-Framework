@@ -23,9 +23,9 @@ class Scheduler : NSObject {
 
     
     // connected clients list
-    internal let connectedClients:NSMutableSet!
+    internal var connectedClients =  Dictionary<Int32, ClientObject>();
     
-    init (clients: NSMutableSet) {
+    init (clients: Dictionary<Int32, ClientObject>) {
         self.connectedClients = clients;
     }
 
@@ -83,9 +83,11 @@ class Scheduler : NSObject {
                         client.requestHeader["VERSION"] == "HTTP/1.0" {
                             print("keep-alive is not detected");
                             close(fd);
-                            self.connectedClients.remove(fd);
+                            self.connectedClients[fd] = nil;
                             return;
                     }
+                    
+                    client.resetData();
                 });
             }
         }
