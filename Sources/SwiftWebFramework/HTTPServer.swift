@@ -392,10 +392,10 @@ open class HTTPServer : NSObject {
      Function to read from client
      */
     func readFromClient(withFileDescriptor clientDesc:Int32) {
-        let recvBuf = [UInt8](repeating: 0, count: 2048);
+        var recvBuf = [UInt8](repeating: 0, count: 2048);
         var numBytes = 0;
         
-        // buffer size is count-1 since last element has to be null terminated
+        // buffer size is count-1 since last element has to be null terminated if buffer is filled
         numBytes = recv(clientDesc, UnsafeMutableRawPointer(mutating: recvBuf), recvBuf.count-1, 0);
         guard numBytes >= 0 else {
             perror("recv");
@@ -403,6 +403,9 @@ open class HTTPServer : NSObject {
             connectedClients[clientDesc] = nil;
             return;
         }
+        
+        // set last byte to null
+        recvBuf[numBytes] = 0;
         print("Bytes received: \(numBytes)");
         
         // client has closed the request if numbytes is 0
@@ -561,10 +564,10 @@ open class HTTPServer : NSObject {
                     print("epoll client accept");
                     let clientFd = acceptClient();
     
-                    //TODO: Consider edge-triggered eent
+                    //TODO: Consider edge-triggered epoll
                     //setnonblocking(conn_sock);
                     var clientEvent = epoll_event();
-                    clientEvent.events = EPOLLIN.rawValue;            // | EPOLLET;
+                    clientEvent.events = EPOLLIN.rawValue;
                     clientEvent.data.fd = clientFd;
                     guard epoll_ctl(ev, EPOLL_CTL_ADD, clientFd, &clientEvent) >= 0 else {
                         perror("epoll_ctl: conn_sock");
