@@ -178,6 +178,7 @@ open class HTTPServer : NSObject {
                 return false;
             }
         }
+        //TODO: Need to handle meta data of chunked encoding
         // chunked-encoding
         else {
             var footerIndex = 0;
@@ -311,23 +312,12 @@ open class HTTPServer : NSObject {
             if lines[i] == "" {
                 let bodyArr = Array(lines[(i+1)...(lines.count-1)]);
                 
-                // check if client is using chunked encoding
-                if client.requestHeader["Transfer-Encoding"] != nil &&
-                    client.requestHeader["Transfer-Encoding"] == "chunked" {
-                    client.usesChunkedEncoding = true;
-                }
-                
-                //TODO: Refactor this section
-                // get request body if it exists. returns true if full body was received
-                if parseMessageBody(bodyArr, forClient: client) {
+                // parse request body if it exists. returns true if full body was received
+                if !parseMessageBody(bodyArr, forClient: client) {
                     // for http-pipelining, remove from partial request list for next client request
-                    partialRequestList[client.fd] = nil;
-                }
-                // can only have partial message body if there is chunked encoding
-                else if client.usesChunkedEncoding == false {
                     processRequestFlag = false;
                 }
-                
+
                 // empty line is last thing after a header so just break
                 break;
             } else {
@@ -394,8 +384,9 @@ open class HTTPServer : NSObject {
     /**
         Function to read from client
      */
+    var count = 0;
     func readFromClient(withFileDescriptor clientDesc:Int32) {
-        var recvBuf = [UInt8](repeating: 0, count: 2048);
+        var recvBuf = [UInt8](repeating: 0, count: 10000);
         var numBytes = 0;
         
         // buffer size is count-1 since last element has to be null terminated if buffer is filled
@@ -407,10 +398,11 @@ open class HTTPServer : NSObject {
             partialRequestList[clientDesc] = nil;
             return;
         }
-        
+        count += numBytes;
         // set last byte to null
         recvBuf[numBytes] = 0;
         print("Bytes received: \(numBytes)");
+        print("count: \(count)");
         
         // client has closed the request if numbytes is 0
         if numBytes == 0 {
@@ -452,16 +444,13 @@ open class HTTPServer : NSObject {
         if client.hasCompleteHeader {
             let lines = client.rawRequest.components(separatedBy: "\r\n");
             
-            // if full body has been set, process the request
+            // if full body has been parsed, process the request
             if parseMessageBody(lines, forClient: client) {
-                // already routed if chunked-encoding in parseRequest
-                if client.usesChunkedEncoding == false {
-                    // for http-pipelining, remove from partial request list for next client request
-                    partialRequestList[client.fd] = nil;
-                    
-                    // begin processing the request
-                    processRequest(forClient: client);
-                }
+                // for http-pipelining, remove from partial request list for next client request
+                partialRequestList[client.fd] = nil;
+                
+                // begin processing the request
+                processRequest(forClient: client);
             }
             
             // clear receive buffer
