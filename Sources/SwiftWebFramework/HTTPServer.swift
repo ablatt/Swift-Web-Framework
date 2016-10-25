@@ -17,19 +17,22 @@ import Darwin
 #endif
 
 
-// globals
+// kqueue globals
 internal let KQUEUE_TIMEOUT:Int = 100000;
 internal let KQUEUE_MAX_EVENTS = 32;
     
+// epoll globals
 internal let EPOLL_TIMEOUT:Int32 = 0;
 internal let EPOLL_MAX_EVENTS:Int32 = 32;
-    
+
+// other globals
 internal let MAX_CONNECTIONS:Int32 = 1000
 internal let POLL_TIME = 0.00005;
 internal let DEFAULT_HOST_NAME = "localhost";
 internal typealias URIDictionary = Dictionary<String, RouteClosure>;
     
 open class HTTPServer : NSObject {
+//MARK: Class variables
     // router to route URIs to callbacks
     internal let router = Router();
     
@@ -44,11 +47,11 @@ open class HTTPServer : NSObject {
     
     // queues to perform units of work
     fileprivate var workerThread = DispatchQueue(label: "http.worker.thread", attributes: DispatchQueue.Attributes.concurrent);       // concurrent queue for processing and work
-    fileprivate var clientThread = DispatchQueue(label: "http.client.thread", attributes: []);           // serial queue to handle client requests
     fileprivate let lockQueue = DispatchQueue(label: "httpserver.lock", attributes: []);
     
     // list of connected clients
-    fileprivate var connectedClients = Dictionary<Int32, ClientObject>();
+    fileprivate var partialRequestList = Dictionary<Int32, ClientObject>();
+    fileprivate var connectedClients = NSMutableSet()
 
     // socket variables
     #if os(Linux)
@@ -101,7 +104,8 @@ open class HTTPServer : NSObject {
                 return false;
             }
         }
-
+        
+        // request must have a host per HTTP/1.1
         var host:String! = client.requestHeader["Host"];
         if host == nil {
             host = DEFAULT_HOST_NAME;
@@ -316,11 +320,8 @@ open class HTTPServer : NSObject {
                 //TODO: Refactor this section
                 // get request body if it exists. returns true if full body was received
                 if parseMessageBody(bodyArr, forClient: client) {
-                    if client.requestHeader["METHOD"] == "POST" {
-                        client.formData = parseFormData(FromRequest: lines, startingAtIndex: i+1);
-                    }
-                    
-                    // TODO: More processing of message body for different methods
+                    // for http-pipelining, remove from partial request list for next client request
+                    partialRequestList[client.fd] = nil;
                 }
                 // can only have partial message body if there is chunked encoding
                 else if client.usesChunkedEncoding == false {
@@ -366,6 +367,8 @@ open class HTTPServer : NSObject {
         
         // schedule request processing and response
         if processRequestFlag == true {
+            // for http-pipelining, remove from partial request list for next client request
+            partialRequestList[client.fd] = nil;
             processRequest(forClient: client);
         }
     }
@@ -389,7 +392,7 @@ open class HTTPServer : NSObject {
     }
 
     /**
-     Function to read from client
+        Function to read from client
      */
     func readFromClient(withFileDescriptor clientDesc:Int32) {
         var recvBuf = [UInt8](repeating: 0, count: 2048);
@@ -400,7 +403,8 @@ open class HTTPServer : NSObject {
         guard numBytes >= 0 else {
             perror("recv");
             close(clientDesc);
-            connectedClients[clientDesc] = nil;
+            connectedClients.remove(clientDesc);
+            partialRequestList[clientDesc] = nil;
             return;
         }
         
@@ -410,23 +414,24 @@ open class HTTPServer : NSObject {
         
         // client has closed the request if numbytes is 0
         if numBytes == 0 {
-            print("no bytes found, closing");
+            print("recv returned 0, closing socket \(clientDesc)");
             close(clientDesc);
-            connectedClients[clientDesc] = nil;
+            connectedClients.remove(clientDesc);
+            partialRequestList[clientDesc] = nil;
             return;
         }
         
         // get client object from client list
         var client:ClientObject!;
-        if self.connectedClients[clientDesc] == nil {
+        if self.partialRequestList[clientDesc] == nil {
             client = ClientObject();
             
             // add to clients list
-            self.connectedClients[clientDesc] = client;
+            self.partialRequestList[clientDesc] = client;
             
             client.fd = clientDesc;
         } else {
-            client = self.connectedClients[clientDesc];
+            client = self.partialRequestList[clientDesc];
         }
         
         // append to raw request string
@@ -449,9 +454,12 @@ open class HTTPServer : NSObject {
             
             // if full body has been set, process the request
             if parseMessageBody(lines, forClient: client) {
-                
                 // already routed if chunked-encoding in parseRequest
                 if client.usesChunkedEncoding == false {
+                    // for http-pipelining, remove from partial request list for next client request
+                    partialRequestList[client.fd] = nil;
+                    
+                    // begin processing the request
                     processRequest(forClient: client);
                 }
             }
@@ -459,7 +467,7 @@ open class HTTPServer : NSObject {
             // clear receive buffer
             client.rawRequest.removeAll();
         }
-            // Case 2
+        // Case 2
         else if client.rawRequest.range(of: "\r\n\r\n") != nil {
             client.hasCompleteHeader = true;
             
@@ -469,7 +477,7 @@ open class HTTPServer : NSObject {
             // clear receive buffer
             client.rawRequest.removeAll();
         }
-            // Case 3
+        // Case 3
         else {
             print("***Received only partial request***");
         }
@@ -480,7 +488,9 @@ open class HTTPServer : NSObject {
 //MARK: Event loop functions
 #if !os(Linux)
     /**
-        Event loop for FreeBSD (macOS)
+     
+     Event loop for FreeBSD (macOS)
+     
      */
     @objc fileprivate func bsdEventLoop() {
         // create array to store returned kevents
@@ -516,6 +526,9 @@ open class HTTPServer : NSObject {
                         close(clientFd);
                         return;
                     }
+                    
+                    // add to connected clients set
+                    connectedClients.add(clientFd);
                 }
                 // client sending data
                 else if Int32(kEventList[i].filter) == EVFILT_READ {
@@ -524,7 +537,9 @@ open class HTTPServer : NSObject {
                 }
                 // client closing connection
                 else if Int32(kEventList[i].flags) == EV_EOF {
-                    close(Int32(kEventList[i].ident));
+                    let clientDesc = Int32(kEventList[i].ident);
+                    close(clientDesc);
+                    connectedClients.remove(clientDesc);
                     print("closed file descriptor \(kEventList[i].ident)");
                 }
                 // default fall through
@@ -542,7 +557,6 @@ open class HTTPServer : NSObject {
         // wait for I/O events
         var eEventList = Array(repeating: epoll_event(), count: Int(EPOLL_MAX_EVENTS));
     
-    
         lockQueue.sync(execute: {
             // get I/O events
             let nfds = epoll_wait(ev, &eEventList, EPOLL_MAX_EVENTS, EPOLL_TIMEOUT);
@@ -555,10 +569,11 @@ open class HTTPServer : NSObject {
                 return;
             }
     
-            print("got IO events");
+            print("epoll received IO events");
             // iterate through all the events
             for i in 0...Int(nfds-1) {
                 let eEvent = eEventList[i];
+    
                 // client attempting to connect
                 if eEvent.data.fd == self.serverSock {
                     print("epoll client accept");
@@ -570,20 +585,24 @@ open class HTTPServer : NSObject {
                     clientEvent.events = EPOLLIN.rawValue;
                     clientEvent.data.fd = clientFd;
                     guard epoll_ctl(ev, EPOLL_CTL_ADD, clientFd, &clientEvent) >= 0 else {
-                        perror("epoll_ctl: conn_sock");
+                        perror("epoll_ctl:");
                         continue;
                     }
+    
+                    // add to connected clients set
+                    connectedClients.add(clientFd);
                 }
                 // client sending data
                 else if eEvent.events & unsafeBitCast(EPOLLIN, to: UInt32.self) != 0 {
                     let clientDesc = Int32(eEventList[i].data.fd);
                     readFromClient(withFileDescriptor: clientDesc);
                 }
-                // client closing connection
+                // TODO: epoll close event
                 //else if events[i].events ==
                 else {
                     let clientDesc = Int32(eEvent.data.fd);
                     close(clientDesc);
+                    connectedClients.remove(clientDesc);
                 }
             }
         });
@@ -624,6 +643,8 @@ open class HTTPServer : NSObject {
             perror("socket");
             return;
         }
+        print("Created the server socket");
+        
         // setup server info
         var sin:sockaddr_in = sockaddr_in();
         sin.sin_family = sa_family_t(AF_INET);
@@ -647,8 +668,8 @@ open class HTTPServer : NSObject {
             perror("bind");
             return;
         }
+        print("Binded server socket to port \(port)");
         
-        print("begin listening");
         // listen on the socket
         guard listen(serverSock, MAX_CONNECTIONS) == 0 else {
             perror("listen");

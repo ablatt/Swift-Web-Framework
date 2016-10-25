@@ -13,13 +13,12 @@ public class ClientObject {
     internal var rawRequest:String = String()                        // holds raw request while receiving
     public var requestHeader = Dictionary<String, String>();          // dictionary of request header values
     internal var requestBody:[String]?                               // body of the request
-    public var formData:Dictionary<String, String>?                // form data if POST request
     internal var currentBodyLength = 0;
     internal var hasCompleteHeader = false;                       // flag indicating if full header has been received
     
     // chunked-transfer encoding data
     internal var usesChunkedEncoding = false;
-    internal var chunkedFooter:Dictionary<String, String>?;
+    public var chunkedFooter:Dictionary<String, String>?;
     internal var expectedChunkSize:Int = -1;
     internal var currChunkSize:Int = 0;
     
@@ -40,11 +39,10 @@ public class ClientObject {
         rawRequest.removeAll()
         requestHeader.removeAll();
 
-        formData = nil;
-        
         // reset body if not chunked encoding or we received all chunks
         if usesChunkedEncoding == false || (currChunkSize == expectedChunkSize) {
             requestBody = nil;
+            currentBodyLength = 0;
             
             usesChunkedEncoding = false;
             chunkedFooter = nil;
@@ -52,8 +50,8 @@ public class ClientObject {
             currChunkSize = 0;
         }
         
+        responseHeader.removeAll();
         response = nil;
-        currentBodyLength = 0;
         hasCompleteHeader = false;
     }
     

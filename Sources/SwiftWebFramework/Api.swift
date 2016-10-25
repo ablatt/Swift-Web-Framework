@@ -33,6 +33,7 @@ protocol HTTPServerAPI {
 
     // Utility API
     func readFile(_ file:String) throws -> [String];
+    func getFormData(forClient client:ClientObject) -> Dictionary<String, String>?;
 }
 
 /**
@@ -178,7 +179,8 @@ extension HTTPServer: HTTPServerAPI {
     /**
         API to parse form data from message body
      */
-    public func parseFormData(FromRequest request:[String], startingAtIndex index:Int) -> Dictionary<String, String> {
+    /*
+    public func getFormData(FromRequest request:[String], startingAtIndex index:Int) -> Dictionary<String, String> {
         var formData = Dictionary<String, String>();
         
         // iterate through all the lines containing form data and extract
@@ -192,6 +194,30 @@ extension HTTPServer: HTTPServerAPI {
                     continue;
                 }
                 formData[formPair[0]] = formPair[1];
+            }
+        }
+        return formData;
+    }
+    */
+    func getFormData(forClient client:ClientObject) -> Dictionary<String, String>? {
+        var formData:Dictionary<String, String>?;
+    
+        guard client.requestBody != nil else {
+            print("No request body, can't get form.");
+            return formData;
+        }
+        formData = Dictionary<String, String>();
+    
+        // iterate through all the lines containing form data and extract
+        for line in client.requestBody! {
+            let postEntries = line.components(separatedBy: "&");
+            for j in 0...(postEntries.count - 1) {
+                let formPair = postEntries[j].components(separatedBy: "=");
+                guard formPair.count == 2 else {
+                    formData![formPair[0]] = "";
+                    continue;
+                }
+                formData![formPair[0]] = formPair[1];
             }
         }
         return formData;
