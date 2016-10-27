@@ -61,6 +61,10 @@ open class HTTPServer : NSObject {
     #endif
     fileprivate var serverSock:Int32 = 0;               // server socket
     
+    // CRLF delimiters
+    let headerDelimiter = String("\r\n\r\n")!.data(using: .utf8)!;
+    let crlfDelimiter = String("\r\n")!.data(using: .utf8)!;
+    
     override init () {
         scheduler = Scheduler(clients: connectedClients);
     }
@@ -85,7 +89,7 @@ open class HTTPServer : NSObject {
     /**
         Validate HTTP header
      */
-    fileprivate func validateRequestHeader(_ client: ClientObject) -> Bool {
+    fileprivate func validateRequestHeader(forClient client: ClientObject) -> Bool {
         // validate HTTP method
         guard client.requestHeader["METHOD"] != nil else {
             return false;
@@ -111,16 +115,22 @@ open class HTTPServer : NSObject {
             host = DEFAULT_HOST_NAME;
         }
         
-        // if no middleware is defined, just return true
-        guard middlewareList[host] != nil else {
-            return true;
+        // pass request to user defined middleware
+        if middlewareList[host] != nil  {
+            for middleware in middlewareList[host]! {
+                if middleware(client) == false {
+                    return false;
+                }
+            }
         }
         
-        // pass request to user defined closures
-        for middleware in middlewareList[host]! {
-            if middleware(client) == false {
-                return false;
-            }
+        // if HTTP 1.1, send 100 response for valid request header
+        if client.requestHeader["VERSION"] == "HTTP/1.1" &&
+            client.requestHeader["Expect"] == "100-continue" {
+            let responseClient = ClientObject();
+            responseClient.fd = client.fd;
+            responseClient.response = dispatcher.addResponseHeader(forResponse: "", withStatusCode: "100");
+            scheduler.scheduleResponse(forClient: responseClient);
         }
         
         // validation ok
@@ -130,7 +140,7 @@ open class HTTPServer : NSObject {
     /**
         Special function for processing POST requests
      */
-    fileprivate func parseMessageBody(_ lines:[String], forClient client:ClientObject) -> Bool {
+    fileprivate func parseRequestMessageBody(forClient client:ClientObject) -> Bool {
         var contentLength = client.requestHeader["Content-Length"];
         let chunkedEncoding = client.requestHeader["Transfer-Encoding"];
         
@@ -141,6 +151,9 @@ open class HTTPServer : NSObject {
                 print("content-length not found nor chunked-encoding. cannot proceed parsing message body");
                 return false;
             } else if client.requestHeader["METHOD"] == "GET" {
+                // request fully received, remove from partial request list for HTTP pipelining
+                partialRequestList[client.fd] = nil;
+                
                 return true;
             }
         }
@@ -161,7 +174,9 @@ open class HTTPServer : NSObject {
                 if lines[i] == "" {
                     continue;
                 }
-                client.currentBodyLength += lines[i].characters.count;
+                client.currentBodyLength += lines[i].characters.count
+                
+                // TODO: Need to init with proper encoding
                 if client.requestBody == nil {
                     client.requestBody = [String]();
                 }
@@ -173,6 +188,9 @@ open class HTTPServer : NSObject {
             
             // check if full body message was received
             if client.currentBodyLength == bodySize {
+                // request fully received, remove from partial request list for HTTP pipelining
+                partialRequestList[client.fd] = nil;
+                
                 return true;
             } else {
                 return false;
@@ -256,23 +274,23 @@ open class HTTPServer : NSObject {
     }
     
     /**
-        Process request header from client
+        Parse request header from client
      */
-    fileprivate func parseRequest(forClient client: ClientObject) {
+    fileprivate func parseRequestHeader(forClient client: ClientObject, withRequest rawRequest:String) -> Bool{
         // create the request dictionary to hold HTTP header key and values
         client.requestHeader = Dictionary<String, String>();
         client.requestHeader["METHOD"] = nil;
         client.requestHeader["URI"] = nil;
         
         // initial line should contain URI & method
-        let lines = client.rawRequest.components(separatedBy: "\r\n");
+        let lines = rawRequest.components(separatedBy: "\r\n");
         var tokens = lines[0].components(separatedBy: " ");
         
         guard tokens.count >= 2 else {
             print("Initial request line is invalid");
             dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter:router);
             scheduler.scheduleResponse(forClient: client);
-            return;
+            return false;
         }
         
         // set URI and HTTP methods parsed from request
@@ -289,7 +307,7 @@ open class HTTPServer : NSObject {
                 print("Initial request line is invalid");
                 dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter:router);
                 scheduler.scheduleResponse(forClient: client);
-                return;
+                return false;
             }
             
             // separate tokens by '/' to grab to path
@@ -298,69 +316,31 @@ open class HTTPServer : NSObject {
                 print("Initial request line is invalid");
                 dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter:router);
                 scheduler.scheduleResponse(forClient: client);
-                return;
+                return false;
             }
             client.requestHeader["URI"] = pathTokens[1];
         }
         
-        // flag indicating if complete request was received
-        var processRequestFlag = true;
-        
         // process the other HTTP header entries
         for i in 1...(lines.count - 1) {
-            // full request header received. two empty separates header from body
-            if lines[i] == "" {
-                let bodyArr = Array(lines[(i+1)...(lines.count-1)]);
-                
-                // parse request body if it exists. returns true if full body was received
-                if !parseMessageBody(bodyArr, forClient: client) {
-                    // for http-pipelining, remove from partial request list for next client request
-                    processRequestFlag = false;
-                }
+            // header is in key:val format
+            tokens = lines[i].components(separatedBy: ":");
 
-                // empty line is last thing after a header so just break
-                break;
-            } else {
-                // header is in key:val format
-                tokens = lines[i].components(separatedBy: ":");
-
-                // header data has to be in key:value pair
-                guard tokens.count >= 2 else {
-                    client.requestHeader[tokens[0]] = "";
-                    continue;
-                }
-                
-                // strip white space from tokens
-                tokens[0] = tokens[0].replacingOccurrences(of: " ", with: "");
-                tokens[1] = tokens[1].replacingOccurrences(of: " ", with: "");
-
-                client.requestHeader[tokens[0]] = tokens[1];
+            // header data has to be in key:value pair
+            guard tokens.count >= 2 else {
+                client.requestHeader[tokens[0]] = "";
+                continue;
             }
-        }
-        
-        // validate request header
-        guard validateRequestHeader(client) else {
-            print("Invalid request header");
-            dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
-            scheduler.scheduleResponse(forClient: client);
-            return;
-        }
-        
-        // if HTTP 1.1, send 100 response for valid request header
-        if client.requestHeader["VERSION"] == "HTTP/1.1" &&
-            client.requestHeader["Expect"] == "100-continue" {
-            let responseClient = ClientObject();
-            responseClient.fd = client.fd;
-            responseClient.response = dispatcher.addResponseHeader(forResponse: "", withStatusCode: "100");
-            scheduler.scheduleResponse(forClient: responseClient);
+            
+            // strip white space from tokens
+            tokens[0] = tokens[0].replacingOccurrences(of: " ", with: "");
+            tokens[1] = tokens[1].replacingOccurrences(of: " ", with: "");
+
+            client.requestHeader[tokens[0]] = tokens[1];
         }
         
         // schedule request processing and response
-        if processRequestFlag == true {
-            // for http-pipelining, remove from partial request list for next client request
-            partialRequestList[client.fd] = nil;
-            processRequest(forClient: client);
-        }
+        return true;
     }
     
   //MARK: Helpers for event network event loop
@@ -384,9 +364,8 @@ open class HTTPServer : NSObject {
     /**
         Function to read from client
      */
-    var count = 0;
     func readFromClient(withFileDescriptor clientDesc:Int32) {
-        var recvBuf = [UInt8](repeating: 0, count: 10000);
+        var recvBuf = [CChar](repeating: 0, count: 10000);
         var numBytes = 0;
         
         // buffer size is count-1 since last element has to be null terminated if buffer is filled
@@ -398,11 +377,10 @@ open class HTTPServer : NSObject {
             partialRequestList[clientDesc] = nil;
             return;
         }
-        count += numBytes;
+
         // set last byte to null
         recvBuf[numBytes] = 0;
         print("Bytes received: \(numBytes)");
-        print("count: \(count)");
         
         // client has closed the request if numbytes is 0
         if numBytes == 0 {
@@ -426,13 +404,13 @@ open class HTTPServer : NSObject {
             client = self.partialRequestList[clientDesc];
         }
         
-        // append to raw request string
-        client.rawRequest.append(String.init(cString: recvBuf));
-        
+        client.rawRequest.append(Data(bytes: recvBuf, count: numBytes));
+
         /**
          3 Cases for the Received Request:
-         Case 1: Client object has full request header. Client buffer is part of message body.
          
+         Case 1: Client object has full request header. Client buffer is part of message body.
+
          Case 2: Client object does not have full request header. Client buffer contains "\r\n\r\n" so a full header
          can be processed and the request method can be extracted.
          
@@ -442,11 +420,10 @@ open class HTTPServer : NSObject {
          */
         // Case 1
         if client.hasCompleteHeader {
-            let lines = client.rawRequest.components(separatedBy: "\r\n");
-            
             // if full body has been parsed, process the request
-            if parseMessageBody(lines, forClient: client) {
-                // for http-pipelining, remove from partial request list for next client request
+            if parseRequestMessageBody(forClient: client) {
+                // request fully received, remove from partial request list to receive next request
+                // for HTTP pipelining
                 partialRequestList[client.fd] = nil;
                 
                 // begin processing the request
@@ -457,14 +434,41 @@ open class HTTPServer : NSObject {
             client.rawRequest.removeAll();
         }
         // Case 2
-        else if client.rawRequest.range(of: "\r\n\r\n") != nil {
-            client.hasCompleteHeader = true;
+        else if let crlfRange = client.rawRequest.range(of: headerDelimiter) {
+            // get request header data
+            let headerRange = Range<Int> (0...(crlfRange.lowerBound-1));
+            let headerData = client.rawRequest.subdata(in: headerRange);
+            let rawHeaderString = String(describing: headerData);
             
-            // process the request
-            self.parseRequest(forClient: client);
+            // request body data
+            let requestSize = client.rawRequest.count;
+            let bodyData:Data?;
+            if crlfRange.upperBound < (requestSize - 1) {
+                let bodyRange = Range<Int> (crlfRange.upperBound...(requestSize - 1));
+                bodyData = client.rawRequest.subdata(in: bodyRange);
+            }
             
-            // clear receive buffer
+            // attempt to parse and validate request header
+            if parseRequestHeader(forClient: client, withRequest: rawHeaderString) &&
+                validateRequestHeader(forClient: client) {
+          
+                client.hasCompleteHeader = true;
+
+                // try to parse the request message body if it exists
+                if bodyData != nil && parseRequestMessageBody(forClient: client) {
+                    
+                    // begin processing the request
+                    processRequest(forClient: client);
+                }
+            } else {
+                print("Invalid request header");
+                dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
+                scheduler.scheduleResponse(forClient: client);
+            }
+            
+            // clear receive buffer since the received data has just been processed
             client.rawRequest.removeAll();
+      
         }
         // Case 3
         else {

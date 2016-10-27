@@ -17,6 +17,8 @@
 		CE7D75A21DBD525700CA84BC /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7D75981DBD525700CA84BC /* Router.swift */; };
 		CE7D75A31DBD525700CA84BC /* Scheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7D75991DBD525700CA84BC /* Scheduler.swift */; };
 		CE7D75A41DBD525700CA84BC /* Utility.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7D759A1DBD525700CA84BC /* Utility.swift */; };
+		CEA52DE11DC1C9AF001AB3C4 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA52DE01DC1C9AF001AB3C4 /* Parser.swift */; };
+		CEA52DE21DC1C9AF001AB3C4 /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA52DE01DC1C9AF001AB3C4 /* Parser.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +33,7 @@
 		CE7D75981DBD525700CA84BC /* Router.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Router.swift; path = Sources/SwiftWebFramework/Router.swift; sourceTree = "<group>"; };
 		CE7D75991DBD525700CA84BC /* Scheduler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Scheduler.swift; path = Sources/SwiftWebFramework/Scheduler.swift; sourceTree = "<group>"; };
 		CE7D759A1DBD525700CA84BC /* Utility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Utility.swift; path = Sources/SwiftWebFramework/Utility.swift; sourceTree = "<group>"; };
+		CEA52DE01DC1C9AF001AB3C4 /* Parser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		__PBXFileRef_Package.swift /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		"__PBXFileRef_swift-web-framework.xcodeproj/Configs/Project.xcconfig" /* swift-web-framework.xcodeproj/Configs/Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "swift-web-framework.xcodeproj/Configs/Project.xcconfig"; sourceTree = "<group>"; };
 		"_____Product_swift_web_framework" /* Console App */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = "Console App"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -62,6 +65,7 @@
 				CE7D75931DBD525700CA84BC /* Dispatcher.swift */,
 				CE7D75941DBD525700CA84BC /* HTTPServer.swift */,
 				CE7D75951DBD525700CA84BC /* main.swift */,
+				CEA52DE01DC1C9AF001AB3C4 /* Parser.swift */,
 				CE7D75961DBD525700CA84BC /* Queue.swift */,
 				CE7D75971DBD525700CA84BC /* ResponseStatusCodes.swift */,
 				CE7D75981DBD525700CA84BC /* Router.swift */,
@@ -163,6 +167,7 @@
 				TargetAttributes = {
 					CE7D75271DB7478800CA84BC = {
 						CreatedOnToolsVersion = 8.0;
+						LastSwiftMigration = 0800;
 						ProvisioningStyle = Automatic;
 					};
 					"______Target_swift_web_framework" = {
@@ -203,6 +208,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEA52DE21DC1C9AF001AB3C4 /* Parser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +217,7 @@
 			buildActionMask = 0;
 			files = (
 				CE7D75A41DBD525700CA84BC /* Utility.swift in Sources */,
+				CEA52DE11DC1C9AF001AB3C4 /* Parser.swift in Sources */,
 				CE7D75A31DBD525700CA84BC /* Scheduler.swift in Sources */,
 				CE7D75A21DBD525700CA84BC /* Router.swift in Sources */,
 				CE7D759B1DBD525700CA84BC /* Api.swift in Sources */,

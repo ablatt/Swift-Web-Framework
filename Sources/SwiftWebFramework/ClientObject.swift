@@ -10,9 +10,9 @@ import Foundation
 
 public class ClientObject {
     // request data
-    internal var rawRequest:String = String()                        // holds raw request while receiving
+    internal var rawRequest = Data();                       // holds raw request while receiving request
     public var requestHeader = Dictionary<String, String>();          // dictionary of request header values
-    internal var requestBody:[String]?                               // body of the request
+    internal var requestBody = Data();                               // body of the request
     internal var currentBodyLength = 0;
     internal var hasCompleteHeader = false;                       // flag indicating if full header has been received
     
@@ -29,7 +29,5 @@ public class ClientObject {
     
     // private
     internal var fd:Int32 = -1;
-    init () {
 
-    }
 }
