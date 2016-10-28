@@ -70,19 +70,16 @@ open class HTTPServer : NSObject {
     }
     
 //MARK: Processing of the fully generated parsed request
-    fileprivate func processRequest(forClient client:ClientObject) {
-        client.rawRequest.removeAll();
-        
-        // generate response asynchronously
-        //workerThread.async(execute: {
-            guard let callback = self.router.getRouteForClient(client) else {
-                self.dispatcher.createStatusCodeResponse(withStatusCode: "404", forClient: client, withRouter: self.router);
-                self.scheduleResponse(forClient: client);
-                return;
-            }
-            self.dispatcher.createResponseForClient(client, withCallback: callback);
-            self.scheduler.scheduleResponse(forClient: client);
-        //});
+    fileprivate func processCompleteRequest(forClient client:ClientObject) {
+        // request fully received, remove from partial request list to receive next request for HTTP pipelining
+        partialRequestList[client.fd] = nil;
+        guard let callback = self.router.getRouteForClient(client) else {
+            self.dispatcher.createStatusCodeResponse(withStatusCode: "404", forClient: client, withRouter: self.router);
+            self.scheduleResponse(forClient: client);
+            return;
+        }
+        self.dispatcher.createResponseForClient(client, withCallback: callback);
+        self.scheduler.scheduleResponse(forClient: client);
     }
     
 //MARK: Parsing and validation
@@ -140,7 +137,7 @@ open class HTTPServer : NSObject {
     /**
         Special function for processing POST requests
      */
-    fileprivate func parseRequestMessageBody(forClient client:ClientObject) -> Bool {
+    fileprivate func parseRequestMessageBody(forClient client:ClientObject, withBuffer buff:Data? = nil) -> Bool {
         var contentLength = client.requestHeader["Content-Length"];
         let chunkedEncoding = client.requestHeader["Transfer-Encoding"];
         
@@ -151,9 +148,6 @@ open class HTTPServer : NSObject {
                 print("content-length not found nor chunked-encoding. cannot proceed parsing message body");
                 return false;
             } else if client.requestHeader["METHOD"] == "GET" {
-                // request fully received, remove from partial request list for HTTP pipelining
-                partialRequestList[client.fd] = nil;
-                
                 return true;
             }
         }
@@ -169,33 +163,27 @@ open class HTTPServer : NSObject {
                 return false;
             }
                         
-            // extract message body
-            for i in (0...lines.count-1) {
-                if lines[i] == "" {
-                    continue;
-                }
-                client.currentBodyLength += lines[i].characters.count
-                
-                // TODO: Need to init with proper encoding
-                if client.requestBody == nil {
-                    client.requestBody = [String]();
-                }
-                client.requestBody!.append(lines[i]);
+            // append to request message body and get current length of message body
+            if buff != nil {
+                client.currentBodyLength += buff!.count;
+                client.requestBody.append(buff!);
+            } else {
+                client.currentBodyLength += client.rawRequest.count;
+                client.requestBody.append(client.rawRequest);
             }
+
             
             print("Expected: \(bodySize)");
             print("Curr: \(client.currentBodyLength)");
             
             // check if full body message was received
             if client.currentBodyLength == bodySize {
-                // request fully received, remove from partial request list for HTTP pipelining
-                partialRequestList[client.fd] = nil;
-                
                 return true;
             } else {
                 return false;
             }
         }
+        /*
         //TODO: Need to handle meta data of chunked encoding
         // chunked-encoding
         else {
@@ -271,6 +259,8 @@ open class HTTPServer : NSObject {
             
             return true;
         }
+     */
+        return false;
     }
     
     /**
@@ -422,12 +412,8 @@ open class HTTPServer : NSObject {
         if client.hasCompleteHeader {
             // if full body has been parsed, process the request
             if parseRequestMessageBody(forClient: client) {
-                // request fully received, remove from partial request list to receive next request
-                // for HTTP pipelining
-                partialRequestList[client.fd] = nil;
-                
                 // begin processing the request
-                processRequest(forClient: client);
+                processCompleteRequest(forClient: client);
             }
             
             // clear receive buffer
@@ -438,11 +424,13 @@ open class HTTPServer : NSObject {
             // get request header data
             let headerRange = Range<Int> (0...(crlfRange.lowerBound-1));
             let headerData = client.rawRequest.subdata(in: headerRange);
-            let rawHeaderString = String(describing: headerData);
+            guard let rawHeaderString = String(data:headerData, encoding:.utf8) else {
+                assert(false, "Failed in converting request header (type Data) to String!");
+            }
             
             // request body data
             let requestSize = client.rawRequest.count;
-            let bodyData:Data?;
+            var bodyData:Data? = nil;
             if crlfRange.upperBound < (requestSize - 1) {
                 let bodyRange = Range<Int> (crlfRange.upperBound...(requestSize - 1));
                 bodyData = client.rawRequest.subdata(in: bodyRange);
@@ -455,10 +443,12 @@ open class HTTPServer : NSObject {
                 client.hasCompleteHeader = true;
 
                 // try to parse the request message body if it exists
-                if bodyData != nil && parseRequestMessageBody(forClient: client) {
-                    
-                    // begin processing the request
-                    processRequest(forClient: client);
+                if bodyData != nil {
+                    if parseRequestMessageBody(forClient: client, withBuffer: bodyData) {
+                        processCompleteRequest(forClient: client);
+                    }
+                } else {
+                    processCompleteRequest(forClient: client)
                 }
             } else {
                 print("Invalid request header");

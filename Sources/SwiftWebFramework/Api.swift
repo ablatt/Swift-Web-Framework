@@ -181,13 +181,8 @@ extension HTTPServer: HTTPServerAPI {
      */
     func getFormData(forClient client:ClientObject) -> Dictionary<String, String>? {
         var formData:Dictionary<String, String>?;
-    
-        guard client.requestBody != nil else {
-            print("No request body, can't get form.");
-            return formData;
-        }
         formData = Dictionary<String, String>();
-    
+    /*
         // iterate through all the lines containing form data and extract
         for line in client.requestBody! {
             let postEntries = line.components(separatedBy: "&");
@@ -200,6 +195,7 @@ extension HTTPServer: HTTPServerAPI {
                 formData![formPair[0]] = formPair[1];
             }
         }
+ */
         return formData;
     }
     
