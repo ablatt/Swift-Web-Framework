@@ -9,8 +9,9 @@
 import Foundation
 
 internal class Dispatcher : NSObject {
-    let dateFormatter:DateFormatter!;
-    
+    let dateFormatter:DateFormatter!;    
+    let crlfDelimiter = String("\r\n")!.data(using: .utf8)!;
+
     override init() {
         // dateformatter should be cached per the Data Formatting Guide
         dateFormatter = DateFormatter()
@@ -34,17 +35,24 @@ internal class Dispatcher : NSObject {
         header += "\r\n";
         
         // add 'Content-Length' if response is non-zero
-        if response.characters.count > 0 {
-            let numBytes = response.characters.count;
+        if statusCode != "100" && response.utf8.count > 0 {
+            let numBytes = response.utf8.count;
             header += "Content-Length:\(numBytes)\r\n";
         }
         
         // add 'Date' header (required for HTTP/1.1)
-        let date = Date()
-        header += "Date:\(dateFormatter.string(from: date))\r\n"
+        if statusCode != "100" {
+            let date = Date()
+            header += "Date: \(dateFormatter.string(from: date))\r\n";
+        }
         
+        if statusCode != "100" {
         // add CRLF between header and at the bottom of the body
         return header + "\r\n" + response + "\r\n";
+        }
+        else {
+            return header;
+        }
     }
     
     /**

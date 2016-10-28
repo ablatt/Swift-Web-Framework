@@ -72,7 +72,7 @@ class Scheduler : NSObject {
                             return;
                         }
                         bytesSent += numBytes;
-                        fsync(fd);
+                       // fsync(fd);
                     }
                     print("Bytes sent: \(bytesSent) / \(numBytes)");
                     
