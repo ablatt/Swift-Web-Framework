@@ -24,7 +24,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CE6596F61DC3B46A00334D40 /* Types.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
+		CE6596F61DC3B46A00334D40 /* Types.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Types.swift; path = Sources/SwiftWebFramework/Types.swift; sourceTree = "<group>"; };
 		CE7D75281DB7478800CA84BC /* SwiftWebFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SwiftWebFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE7D75911DBD525700CA84BC /* Api.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Api.swift; path = Sources/SwiftWebFramework/Api.swift; sourceTree = "<group>"; };
 		CE7D75921DBD525700CA84BC /* ClientObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ClientObject.swift; path = Sources/SwiftWebFramework/ClientObject.swift; sourceTree = "<group>"; };
@@ -36,7 +36,7 @@
 		CE7D75981DBD525700CA84BC /* Router.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Router.swift; path = Sources/SwiftWebFramework/Router.swift; sourceTree = "<group>"; };
 		CE7D75991DBD525700CA84BC /* Scheduler.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Scheduler.swift; path = Sources/SwiftWebFramework/Scheduler.swift; sourceTree = "<group>"; };
 		CE7D759A1DBD525700CA84BC /* Utility.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Utility.swift; path = Sources/SwiftWebFramework/Utility.swift; sourceTree = "<group>"; };
-		CEA52DE01DC1C9AF001AB3C4 /* Parser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
+		CEA52DE01DC1C9AF001AB3C4 /* Parser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Parser.swift; path = Sources/SwiftWebFramework/Parser.swift; sourceTree = "<group>"; };
 		__PBXFileRef_Package.swift /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		"__PBXFileRef_swift-web-framework.xcodeproj/Configs/Project.xcconfig" /* swift-web-framework.xcodeproj/Configs/Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "swift-web-framework.xcodeproj/Configs/Project.xcconfig"; sourceTree = "<group>"; };
 		"_____Product_swift_web_framework" /* Console App */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = "Console App"; sourceTree = BUILT_PRODUCTS_DIR; };
