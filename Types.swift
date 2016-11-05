@@ -13,6 +13,7 @@ enum HTTPServerError: Error {
     case BadRequest
     case StringTokenError
     case ChunkSizeExtractionError
+    case ErrorParsingMessageBody
 }
 
 // CRLF delimiters

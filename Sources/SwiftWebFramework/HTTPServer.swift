@@ -210,12 +210,17 @@ open class HTTPServer : NSObject {
          */
         // Case 1
         if client.hasCompleteHeader {
-            // if full body has been parsed, process the request
-            if requestParser.parseMessageBody(forClient: client, withBuffer: client.rawRequest) {
-                // begin processing the request
-                processCompleteRequest(forClient: client);
+            do {
+                // if full body has been parsed, process the request
+                if try requestParser.parseMessageBody(forClient: client, withBuffer: client.rawRequest) {
+                    // begin processing the request
+                    processCompleteRequest(forClient: client);
+                }
+            } catch {
+                print("Encountered error when attempting to parse message body. Closing conn to client \(client.fd)");
+                dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
+                scheduler.scheduleResponse(forClient: client);
             }
-            
             // clear receive buffer
             client.rawRequest.removeAll();
         }
@@ -242,9 +247,15 @@ open class HTTPServer : NSObject {
           
                 client.hasCompleteHeader = true;
 
-                // try to parse the request message body if it exists
-                if requestParser.parseMessageBody(forClient: client, withBuffer: bodyData) {
-                    processCompleteRequest(forClient: client);
+                do {
+                    // try to parse the request message body if it exists
+                    if try requestParser.parseMessageBody(forClient: client, withBuffer: bodyData) {
+                        processCompleteRequest(forClient: client);
+                    }
+                } catch {
+                    print("Encountered error when attempting to parse message body. Closing conn to client \(client.fd)");
+                    dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
+                    scheduler.scheduleResponse(forClient: client);
                 }
  
             } else {

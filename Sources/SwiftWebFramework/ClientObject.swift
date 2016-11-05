@@ -10,11 +10,11 @@ import Foundation
 
 public class ClientObject {
     // request data
-    internal var rawRequest = Data();                       // holds raw request while receiving request
-    public var requestHeader = Dictionary<String, String>();          // dictionary of request header values
-    internal var requestBody = Data();                               // body of the request
+    internal var rawRequest = Data();                                   // holds raw request while receiving request
+    public var requestHeader = Dictionary<String, String>();            // dictionary of request header values
+    internal var requestBody = Data();                                  // body of the request
     internal var currentBodyLength = 0;
-    internal var hasCompleteHeader = false;                       // flag indicating if full header has been received
+    internal var hasCompleteHeader = false;                             // flag indicating if full header has been received
     
     // chunked-transfer encoding data
     public var chunkedFooter:Dictionary<String, String>?;
@@ -29,5 +29,6 @@ public class ClientObject {
     
     // private
     internal var fd:Int32 = -1;
+    internal var closeConn:Bool = false;
 
 }

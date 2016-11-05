@@ -128,7 +128,7 @@ class Parser {
      Special function for processing POST requests
      */
     //TODO: Need error handlers
-    internal func parseMessageBody(forClient client:ClientObject, withBuffer buff:Data? = nil) -> Bool {
+    internal func parseMessageBody(forClient client:ClientObject, withBuffer buff:Data? = nil) throws -> Bool {
         var contentLength = client.requestHeader["Content-Length"];
         let chunkedEncoding = client.requestHeader["Transfer-Encoding"];
         
@@ -137,7 +137,7 @@ class Parser {
             // POST requests need to have a Content-Length or be chunked-encoded
             if client.requestHeader["METHOD"] == "POST" {
                 print("content-length not found nor chunked-encoding. cannot proceed parsing message body");
-                return false;
+                throw HTTPServerError.ErrorParsingMessageBody;
             } else if client.requestHeader["METHOD"] == "GET" {
                 return true;
             }
@@ -153,7 +153,7 @@ class Parser {
             contentLength = contentLength!.replacingOccurrences(of: " ", with: "");
             guard let messageSize = Int(contentLength!) else {
                 print("Content-Length header not found");
-                return false;
+                throw HTTPServerError.ErrorParsingMessageBody;
             }
             
             // append to request message body and get current length of message body
@@ -172,7 +172,7 @@ class Parser {
                 return false;
             }
         }
-        //TODO: Need to handle meta data of chunked encoding
+        //TODO: Need to handle meta data + footer of chunked encoding
         // chunked-encoding
         else {
             var offset = 0;
@@ -185,13 +185,13 @@ class Parser {
                         client.expectedChunkSize = chunkData.chunkSize;
                         offset = chunkData.offset;
                     } catch {
-                        //print("Can\'t proess request. Encountered invalid chunk size during message body extraction.");
+                        throw HTTPServerError.ErrorParsingMessageBody;
                     }
                 }
 
                 // end of message body when chunk size is 0
                 if client.expectedChunkSize == 0 {
-                    print("--Received final chunk ---");
+                    print("--- Received final chunk ---");
                     break;
                 }
                 
@@ -239,6 +239,5 @@ class Parser {
                 return false;
             }
         }
-        return false;
     }
 }

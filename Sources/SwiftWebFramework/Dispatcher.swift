@@ -62,6 +62,11 @@ internal class Dispatcher : NSObject {
         }
         
         client.response = addResponseHeader(forResponse: router.statusCodeHandler[statusCode]!(client), withStatusCode: statusCode);
+        
+        // if error status code, close connection after send
+        if statusCode == "4" {
+            client.closeConn = true;
+        }
     }
     
     /**
