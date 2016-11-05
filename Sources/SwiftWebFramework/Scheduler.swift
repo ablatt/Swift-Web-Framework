@@ -21,7 +21,6 @@ class Scheduler : NSObject {
     // serial queue for
     fileprivate var sendQueue = DispatchQueue(label: "swiftwebframework.sendqueue", attributes: []);
 
-    
     // connected clients list
     internal var connectedClients = NSMutableSet();
     
@@ -29,7 +28,6 @@ class Scheduler : NSObject {
         self.connectedClients = clients;
     }
 
-    
     /**
         Schedule to send response to client
      */
@@ -72,7 +70,6 @@ class Scheduler : NSObject {
                             return;
                         }
                         bytesSent += numBytes;
-                       // fsync(fd);
                     }
                     print("Bytes sent: \(bytesSent) / \(numBytes)");
                     
@@ -80,7 +77,8 @@ class Scheduler : NSObject {
                     // For HTTP 1.0, connections are assumed to be closed
                     let connectionHeader = client.requestHeader["Connection"];
                     if (connectionHeader != nil && connectionHeader == "close") ||
-                        client.requestHeader["VERSION"] == "HTTP/1.0" {
+                        client.requestHeader["VERSION"] == "HTTP/1.0" ||
+                        client.closeConn {
                             print("keep-alive is not detected");
                             close(fd);
                             self.connectedClients.remove(client.fd);

@@ -73,7 +73,7 @@ class Parser {
         return true;
     }
     
-    fileprivate func extractChunkSize(startingAtIndex offset:Int, withBuffer buff:Data) throws -> (offset:Int, chunkSize:Int) {
+    fileprivate func extractChunkSize(startingAtIndex offset:Int, withBuffer buff:Data) throws -> (offset:Int, chunkSize:Int, metaData:Data?) {
         // we find the next CRLF since offset increase per extraction of a chunk
         let searchRange = Range<Int> (offset..<buff.count);
         guard let crlfRange = buff.range(of: crlfDelimiter, in:searchRange) else {
@@ -90,6 +90,7 @@ class Parser {
         
         // extract chunk size range. meta data can exist at the end of the chunk size line
         // delimited by a semi-colon
+        var metaData:Data? = nil;
         if let semiColonRange = chunkSizeLine.range(of: semiColonDelimiter) {
             let chunkSizeData = buff.subdata(in: Range<Int> (0...semiColonRange.lowerBound));
             guard chunkSizeData.count > 0 else {
@@ -99,6 +100,9 @@ class Parser {
             
             // convert chunk size data to string to convert to int
             chunkSizeStr = String(data: chunkSizeData, encoding:.utf8);
+            
+            // extract metadata that comes after the chunk size
+            metaData = buff.subdata(in: Range<Int> (semiColonRange.upperBound..<chunkSizeLine.count));
         } else {
             // convert chunk size data to string to convert to int
             chunkSizeStr = String(data: chunkSizeLine, encoding:.utf8);
@@ -121,13 +125,12 @@ class Parser {
         // request body starts after end of CRLF
         let offset = crlfRange.upperBound;
         
-        return (offset, chunkSize);
+        return (offset, chunkSize, metaData);
     }
     
     /**
-     Special function for processing POST requests
+        Method to parse the message body of the request
      */
-    //TODO: Need error handlers
     internal func parseMessageBody(forClient client:ClientObject, withBuffer buff:Data? = nil) throws -> Bool {
         var contentLength = client.requestHeader["Content-Length"];
         let chunkedEncoding = client.requestHeader["Transfer-Encoding"];
@@ -172,7 +175,6 @@ class Parser {
                 return false;
             }
         }
-        //TODO: Need to handle meta data + footer of chunked encoding
         // chunked-encoding
         else {
             var offset = 0;
@@ -184,6 +186,10 @@ class Parser {
                         let chunkData = try extractChunkSize(startingAtIndex: offset, withBuffer: buff!);
                         client.expectedChunkSize = chunkData.chunkSize;
                         offset = chunkData.offset;
+                        
+                        if chunkData.metaData != nil {
+                            client.chunkedMetaData.append(chunkData.metaData!);
+                        }
                     } catch {
                         throw HTTPServerError.ErrorParsingMessageBody;
                     }
@@ -192,6 +198,9 @@ class Parser {
                 // end of message body when chunk size is 0
                 if client.expectedChunkSize == 0 {
                     print("--- Received final chunk ---");
+                    
+                    // increment offset by 2 since last chunk size still has crlf
+                    offset += 2;
                     break;
                 }
                 
@@ -228,9 +237,34 @@ class Parser {
             } // iterate over buf
             
             // get footer
-            //while offset < buff!.count {
-            //
-            //}
+            while offset < buff!.count {
+                // we find the next CRLF that separates footer content
+                let searchRange = Range<Int> (offset..<buff!.count);
+                guard let crlfRange = buff!.range(of: crlfDelimiter, in:searchRange) else {
+                    print("Invalid message body. Request is using chunked-encoding. Chunk size not formatted properly.");
+                    throw HTTPServerError.ChunkSizeExtractionError;
+                }
+                offset = searchRange.upperBound;
+
+                // extract chunk size line as data
+                let lineRange = Range<Int> (offset...(crlfRange.lowerBound-1));
+                let footLine = buff!.subdata(in: lineRange);
+                
+                // attempt to convert footer to string for parsing
+                guard let footerStr = String(data: footLine, encoding:.utf8) else {
+                    print("Failed to convert footer Data type to string for parsing.");
+                    continue;
+                }
+                
+                // tokens separated by ':'
+                let footerTokens = footerStr.components(separatedBy: ":");
+                guard footerTokens.count > 2 else {
+                    print("Footer token delimited by : is invalid.");
+                    continue;
+                }
+                
+                client.chunkedFooter[footerTokens[0]] = footerTokens[1];
+            }
             
             // received last chunk when chunk size parsed is 0
             if client.expectedChunkSize == 0 {

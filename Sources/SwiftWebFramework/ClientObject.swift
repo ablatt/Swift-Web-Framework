@@ -17,9 +17,10 @@ public class ClientObject {
     internal var hasCompleteHeader = false;                             // flag indicating if full header has been received
     
     // chunked-transfer encoding data
-    public var chunkedFooter:Dictionary<String, String>?;
+    public lazy var chunkedFooter = Dictionary<String, String>();
     internal var expectedChunkSize:Int = -1;
     internal var currChunkSize:Int = 0;
+    public var chunkedMetaData = Array<Data> ();
     
     // response data
     public var responseHeader = Dictionary<String, String>();         // dictionary of response header values
