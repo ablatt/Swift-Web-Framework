@@ -64,10 +64,6 @@ open class HTTPServer : NSObject {
     #endif
     fileprivate var serverSock:Int32 = 0;               // server socket
     
-    // CRLF delimiters
-    let headerDelimiter = String("\r\n\r\n")!.data(using: .utf8)!;
-    let crlfDelimiter = String("\r\n")!.data(using: .utf8)!;
-    
     override init () {
         scheduler = Scheduler(clients: connectedClients);
     }
@@ -123,7 +119,6 @@ open class HTTPServer : NSObject {
                 }
             }
         }
-        
         
         // if HTTP 1.1, send 100 response for valid request header
         if client.requestHeader["VERSION"] == "HTTP/1.1" &&

@@ -73,9 +73,61 @@ class Parser {
         return true;
     }
     
+    fileprivate func extractChunkSize(startingAtIndex offset:Int, withBuffer buff:Data) throws -> (offset:Int, chunkSize:Int) {
+        // we find the next CRLF since offset increase per extraction of a chunk
+        let searchRange = Range<Int> (offset..<buff.count);
+        guard let crlfRange = buff.range(of: crlfDelimiter, in:searchRange) else {
+            print("Invalid message body. Request is using chunked-encoding. Chunk size not formatted properly.");
+            throw HTTPServerError.ChunkSizeExtractionError;
+        }
+        
+        // extract chunk size line as data
+        let lineRange = Range<Int> (offset...(crlfRange.lowerBound-1));
+        let chunkSizeLine = buff.subdata(in: lineRange);
+        
+        // chunk size string
+        var chunkSizeStr:String?;
+        
+        // extract chunk size range. meta data can exist at the end of the chunk size line
+        // delimited by a semi-colon
+        if let semiColonRange = chunkSizeLine.range(of: semiColonDelimiter) {
+            let chunkSizeData = buff.subdata(in: Range<Int> (0...semiColonRange.lowerBound));
+            guard chunkSizeData.count > 0 else {
+                print("Failed to find chunk size in request message body with chunked encoding.");
+                throw HTTPServerError.ChunkSizeExtractionError;
+            }
+            
+            // convert chunk size data to string to convert to int
+            chunkSizeStr = String(data: chunkSizeData, encoding:.utf8);
+        } else {
+            // convert chunk size data to string to convert to int
+            chunkSizeStr = String(data: chunkSizeLine, encoding:.utf8);
+        }
+        
+        guard chunkSizeStr != nil else {
+            print("Failed to convert chunk size Data to type String.");
+            throw HTTPServerError.ChunkSizeExtractionError;
+        }
+        
+        // convert chunk size hex into Int
+        guard let convertedChunk = hexToInt(withHexString: &chunkSizeStr!) else {
+            print("Failed to convert chunk size hex string to Int.");
+            throw HTTPServerError.ChunkSizeExtractionError;
+        }
+        
+        let chunkSize = convertedChunk;
+        
+        
+        // request body starts after end of CRLF
+        let offset = crlfRange.upperBound;
+        
+        return (offset, chunkSize);
+    }
+    
     /**
      Special function for processing POST requests
      */
+    //TODO: Need error handlers
     internal func parseMessageBody(forClient client:ClientObject, withBuffer buff:Data? = nil) -> Bool {
         var contentLength = client.requestHeader["Content-Length"];
         let chunkedEncoding = client.requestHeader["Transfer-Encoding"];
@@ -91,14 +143,16 @@ class Parser {
             }
         }
         
+        if buff == nil && (contentLength != nil || chunkedEncoding != nil) {
+            return false;
+        }
+        
         // extract message body with content-length header specified
         if contentLength != nil {
             // strip white space and convert to int
             contentLength = contentLength!.replacingOccurrences(of: " ", with: "");
             guard let messageSize = Int(contentLength!) else {
                 print("Content-Length header not found");
-                //dispatcher.createStatusCodeResponse(withStatusCode: "400", forClient: client, withRouter: router);
-                //scheduler.scheduleResponse(forClient: client);
                 return false;
             }
             
@@ -118,83 +172,73 @@ class Parser {
                 return false;
             }
         }
-        /*
-         //TODO: Need to handle meta data of chunked encoding
-         // chunked-encoding
-         else {
-         var footerIndex = 0;
-         //print("Count: \(lines.count)");
-         for i in (0...lines.count-1) {
-         if lines[i] == "" {
-         continue;
-         }
-         
-         var tokens = lines[i].components(separatedBy: ";");
-         
-         guard tokens.count > 0 else {
-         print("failed to get chunk size");
-         return false;
-         }
-         
-         var chunkSize:Int!;
-         
-         // check if last chunk received was chunk size or not
-         if client.expectedChunkSize < 0 {
-         chunkSize = hexToInt(withHexString:&tokens[0]);
-         guard chunkSize != nil else {
-         print("failed to convert hex chunk size to int");
-         return false;
-         }
-         
-         // if this is the last line, store the chunk size for next chunks received
-         client.expectedChunkSize = chunkSize;
-         } else {
-         chunkSize = client.expectedChunkSize;
-         
-         // no more chunks but there are possible footers
-         if chunkSize != 0 {
-         // next line contains request body
-         if client.requestBody == nil {
-         client.requestBody = [String]();
-         }
-         
-         client.requestBody!.append(lines[i]);
-         client.currChunkSize += lines[i].characters.count;
-         
-         // check if we can get next chunk size
-         if client.currChunkSize == client.expectedChunkSize {
-         client.expectedChunkSize = -1;
-         client.currChunkSize = 0;
-         }
-         } else {
-         footerIndex = i + 1;
-         break;
-         }
-         }
-         }
-         
-         // extract foot
-         while footerIndex < lines.count {
-         // end of chunked data section
-         if lines[footerIndex] == "" {
-         break;
-         }
-         
-         let footerTokens =  lines[footerIndex].components(separatedBy: ":");
-         if footerTokens.count < 2 {
-         footerIndex += 1;
-         continue;
-         }
-         if client.chunkedFooter == nil {
-         client.chunkedFooter = Dictionary<String, String>();
-         }
-         client.chunkedFooter![footerTokens[0]] = footerTokens[1];
-         footerIndex += 1;
-         }
-         
-         return true;
-         }
-         */
+        //TODO: Need to handle meta data of chunked encoding
+        // chunked-encoding
+        else {
+            var offset = 0;
+            
+            while offset < buff!.count {
+                // extract chunk size if it was has not been extracted from the message body
+                if client.expectedChunkSize < 0 {
+                    do {
+                        let chunkData = try extractChunkSize(startingAtIndex: offset, withBuffer: buff!);
+                        client.expectedChunkSize = chunkData.chunkSize;
+                        offset = chunkData.offset;
+                    } catch {
+                        //print("Can\'t proess request. Encountered invalid chunk size during message body extraction.");
+                    }
+                }
+
+                // end of message body when chunk size is 0
+                if client.expectedChunkSize == 0 {
+                    print("--Received final chunk ---");
+                    break;
+                }
+                
+                // extract chunk up to expectedChunkSize
+                let extractedData:Data;
+                var dataRange:Range<Int>?;
+                let bytesToExtract = client.expectedChunkSize - client.currChunkSize;
+                let availableBytes = buff!.count - offset;
+                
+                // not enough bytes available to extract
+                if bytesToExtract > availableBytes {
+                    dataRange = Range<Int> (offset..<(offset + availableBytes));
+                } else if bytesToExtract <= availableBytes && bytesToExtract > 0 {
+                    dataRange = Range<Int> (offset..<bytesToExtract);
+                }
+                
+                if dataRange != nil {
+                    extractedData = buff!.subdata(in: dataRange!);
+                    offset += extractedData.count;
+                    client.requestBody.append(extractedData);
+                    client.currChunkSize += extractedData.count;
+                }
+                
+                // check if we full extracted chunkSize bytes
+                if client.currChunkSize == client.expectedChunkSize {
+                    client.currChunkSize = 0;
+                    client.expectedChunkSize = -1;
+                    
+                    // increase by 2 to ignore the CRLF at the end of the chunk body
+                    offset += 2;
+                }
+                
+
+            } // iterate over buf
+            
+            // get footer
+            //while offset < buff!.count {
+            //
+            //}
+            
+            // received last chunk when chunk size parsed is 0
+            if client.expectedChunkSize == 0 {
+                return true;
+            } else {
+                return false;
+            }
+        }
         return false;
     }
 }

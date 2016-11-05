@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE6596F71DC3B46A00334D40 /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6596F61DC3B46A00334D40 /* Types.swift */; };
+		CE6596F81DC3B46A00334D40 /* Types.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6596F61DC3B46A00334D40 /* Types.swift */; };
 		CE7D759B1DBD525700CA84BC /* Api.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7D75911DBD525700CA84BC /* Api.swift */; };
 		CE7D759C1DBD525700CA84BC /* ClientObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7D75921DBD525700CA84BC /* ClientObject.swift */; };
 		CE7D759D1DBD525700CA84BC /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7D75931DBD525700CA84BC /* Dispatcher.swift */; };
@@ -22,6 +24,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CE6596F61DC3B46A00334D40 /* Types.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Types.swift; sourceTree = "<group>"; };
 		CE7D75281DB7478800CA84BC /* SwiftWebFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SwiftWebFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE7D75911DBD525700CA84BC /* Api.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = Api.swift; path = Sources/SwiftWebFramework/Api.swift; sourceTree = "<group>"; };
 		CE7D75921DBD525700CA84BC /* ClientObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ClientObject.swift; path = Sources/SwiftWebFramework/ClientObject.swift; sourceTree = "<group>"; };
@@ -70,6 +73,7 @@
 				CE7D75971DBD525700CA84BC /* ResponseStatusCodes.swift */,
 				CE7D75981DBD525700CA84BC /* Router.swift */,
 				CE7D75991DBD525700CA84BC /* Scheduler.swift */,
+				CE6596F61DC3B46A00334D40 /* Types.swift */,
 				CE7D759A1DBD525700CA84BC /* Utility.swift */,
 			);
 			name = SwiftWebFramework;
@@ -209,6 +213,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEA52DE21DC1C9AF001AB3C4 /* Parser.swift in Sources */,
+				CE6596F81DC3B46A00334D40 /* Types.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -219,6 +224,7 @@
 				CE7D75A41DBD525700CA84BC /* Utility.swift in Sources */,
 				CEA52DE11DC1C9AF001AB3C4 /* Parser.swift in Sources */,
 				CE7D75A31DBD525700CA84BC /* Scheduler.swift in Sources */,
+				CE6596F71DC3B46A00334D40 /* Types.swift in Sources */,
 				CE7D75A21DBD525700CA84BC /* Router.swift in Sources */,
 				CE7D759B1DBD525700CA84BC /* Api.swift in Sources */,
 				CE7D75A01DBD525700CA84BC /* Queue.swift in Sources */,

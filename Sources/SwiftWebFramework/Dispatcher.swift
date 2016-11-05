@@ -9,8 +9,7 @@
 import Foundation
 
 internal class Dispatcher : NSObject {
-    let dateFormatter:DateFormatter!;    
-    let crlfDelimiter = String("\r\n")!.data(using: .utf8)!;
+    let dateFormatter:DateFormatter!;
 
     override init() {
         // dateformatter should be cached per the Data Formatting Guide
@@ -30,7 +29,6 @@ internal class Dispatcher : NSObject {
         header += statusCode + " ";
         if let description = httpStatusCodes[statusCode] {
             header += description;
-            print(description);
         }
         header += "\r\n";
         
@@ -47,10 +45,9 @@ internal class Dispatcher : NSObject {
         }
         
         if statusCode != "100" {
-        // add CRLF between header and at the bottom of the body
-        return header + "\r\n" + response + "\r\n";
-        }
-        else {
+            // add CRLF between header and at the bottom of the body
+            return header + "\r\n" + response + "\r\n";
+        } else {
             return header;
         }
     }
