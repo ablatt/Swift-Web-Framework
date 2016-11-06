@@ -407,16 +407,16 @@ open class HTTPServer : NSObject {
         // create timer to poll for respones to send
         let timer1:Timer!;
         let timer2:Timer!;
-        #if !os(Linux)
-        timer1 = Timer(timeInterval: POLL_TIME, target: scheduler, selector: #selector(scheduler.sendResponse), userInfo: nil, repeats: true);
-        timer2 = Timer(timeInterval: POLL_TIME, target: self, selector: #selector(bsdEventLoop), userInfo: nil, repeats: true);
-        #else
+        #if os(Linux)
         timer1 = Timer(timeInterval: POLL_TIME, repeats: true, block: { _ in
                 self.scheduler.sendResponse();
             });
         timer2 = Timer(timeInterval: POLL_TIME, repeats: true, block: { _ in
                 self.linuxEventLoop();
             });
+        #else
+        timer1 = Timer(timeInterval: POLL_TIME, target: scheduler, selector: #selector(scheduler.sendResponse), userInfo: nil, repeats: true);
+        timer2 = Timer(timeInterval: POLL_TIME, target: self, selector: #selector(bsdEventLoop), userInfo: nil, repeats: true);
         #endif
         RunLoop.current.add(timer1, forMode: RunLoopMode.defaultRunLoopMode);
         RunLoop.current.add(timer2, forMode: RunLoopMode.defaultRunLoopMode);
@@ -432,7 +432,7 @@ open class HTTPServer : NSObject {
             perror("socket");
             return;
         }
-        print("Created the server socket");
+        print("Created the server socket.");
         
         // setup server info
         var sin:sockaddr_in = sockaddr_in();
