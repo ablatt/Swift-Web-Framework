@@ -7,6 +7,9 @@
 //
 
 import Foundation
+#if os(Linux)
+import Dispatch
+#endif
 
 internal class Router: NSObject {
     // dictionaries containing the routes and callbacks

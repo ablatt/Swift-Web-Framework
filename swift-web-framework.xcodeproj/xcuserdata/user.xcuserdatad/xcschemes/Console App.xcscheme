@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CE2AA0251D6A0B3900F918B4"
-               BuildableName = "Swift Web Framework"
-               BlueprintName = "Swift Web Framework"
-               ReferencedContainer = "container:Swift Web Framework.xcodeproj">
+               BlueprintIdentifier = "______Target_swift_web_framework"
+               BuildableName = "Console App"
+               BlueprintName = "Console App"
+               ReferencedContainer = "container:swift-web-framework.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -32,10 +32,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CE2AA0251D6A0B3900F918B4"
-            BuildableName = "Swift Web Framework Console"
-            BlueprintName = "Swift Web Framework Console"
-            ReferencedContainer = "container:SwiftWebFramework.xcodeproj">
+            BlueprintIdentifier = "______Target_swift_web_framework"
+            BuildableName = "Console App"
+            BlueprintName = "Console App"
+            ReferencedContainer = "container:swift-web-framework.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -55,10 +55,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CE2AA0251D6A0B3900F918B4"
-            BuildableName = "Swift Web Framework Console"
-            BlueprintName = "Swift Web Framework Console"
-            ReferencedContainer = "container:SwiftWebFramework.xcodeproj">
+            BlueprintIdentifier = "______Target_swift_web_framework"
+            BuildableName = "Console App"
+            BlueprintName = "Console App"
+            ReferencedContainer = "container:swift-web-framework.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -74,10 +74,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CE2AA0251D6A0B3900F918B4"
-            BuildableName = "Swift Web Framework"
-            BlueprintName = "Swift Web Framework"
-            ReferencedContainer = "container:Swift Web Framework.xcodeproj">
+            BlueprintIdentifier = "______Target_swift_web_framework"
+            BuildableName = "Console App"
+            BlueprintName = "Console App"
+            ReferencedContainer = "container:swift-web-framework.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -74,3 +74,4 @@ public var httpStatusCodes = [
     "511" : "Network Authentication Required",
     "599" : "Network Connect Timeout Error"
 ]
+

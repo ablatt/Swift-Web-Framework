@@ -8,15 +8,15 @@
 
 import Foundation
 
-class Dispatcher : NSObject {
+internal class Dispatcher : NSObject {
     let dateFormatter:DateFormatter!;
-    
+
     override init() {
         // dateformatter should be cached per the Data Formatting Guide
         dateFormatter = DateFormatter()
-        dateFormatter.locale = NSLocale(localeIdentifier: "en_US_POSIX") as Locale!
-        dateFormatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
-        dateFormatter.timeZone = TimeZone(abbreviation: "GMT")
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX");
+        dateFormatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz";
+        dateFormatter.timeZone = TimeZone(abbreviation: "GMT");
     }
     
     /**
@@ -29,22 +29,27 @@ class Dispatcher : NSObject {
         header += statusCode + " ";
         if let description = httpStatusCodes[statusCode] {
             header += description;
-            print(description);
         }
         header += "\r\n";
         
         // add 'Content-Length' if response is non-zero
-        if response.characters.count > 0 {
-            let numBytes = response.characters.count;
+        if statusCode != "100" && response.utf8.count > 0 {
+            let numBytes = response.utf8.count;
             header += "Content-Length:\(numBytes)\r\n";
         }
         
         // add 'Date' header (required for HTTP/1.1)
-        let date = Date()
-        header += "Date:\(dateFormatter.string(from: date))\r\n"
+        if statusCode != "100" {
+            let date = Date()
+            header += "Date: \(dateFormatter.string(from: date))\r\n";
+        }
         
-        // add CRLF between header and at the bottom of the body
-        return header + "\r\n" + response + "\r\n";
+        if statusCode != "100" {
+            // add CRLF between header and at the bottom of the body
+            return header + "\r\n" + response + "\r\n";
+        } else {
+            return header;
+        }
     }
     
     /**
@@ -57,6 +62,11 @@ class Dispatcher : NSObject {
         }
         
         client.response = addResponseHeader(forResponse: router.statusCodeHandler[statusCode]!(client), withStatusCode: statusCode);
+        
+        // if error status code, close connection after send
+        if statusCode == "4" {
+            client.closeConn = true;
+        }
     }
     
     /**

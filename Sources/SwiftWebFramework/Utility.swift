@@ -8,8 +8,7 @@
 
 import Foundation
 
-let htons = Int(OSHostByteOrder()) == OSLittleEndian ? _OSSwapInt16 : { $0 }
-
+#if os(macOS)
 /**
     Utility function to create a kevent for a kernel queue and file descriptor
  */
@@ -23,6 +22,7 @@ func createKernelEvent(withDescriptor socket:Int32) -> kevent {
     kSocketEvent.data = 0;
     return kSocketEvent;
 }
+#endif
 
 /**
     Convert hex string to Int

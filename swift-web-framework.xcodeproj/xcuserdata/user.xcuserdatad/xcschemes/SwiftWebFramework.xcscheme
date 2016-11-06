@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "CE6796FF1DB351CB0052BDBB"
+               BlueprintIdentifier = "CE7D75271DB7478800CA84BC"
                BuildableName = "SwiftWebFramework.framework"
                BlueprintName = "SwiftWebFramework"
-               ReferencedContainer = "container:SwiftWebFramework.xcodeproj">
+               ReferencedContainer = "container:swift-web-framework.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,10 +45,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CE6796FF1DB351CB0052BDBB"
+            BlueprintIdentifier = "CE7D75271DB7478800CA84BC"
             BuildableName = "SwiftWebFramework.framework"
             BlueprintName = "SwiftWebFramework"
-            ReferencedContainer = "container:SwiftWebFramework.xcodeproj">
+            ReferencedContainer = "container:swift-web-framework.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -63,10 +63,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "CE6796FF1DB351CB0052BDBB"
+            BlueprintIdentifier = "CE7D75271DB7478800CA84BC"
             BuildableName = "SwiftWebFramework.framework"
             BlueprintName = "SwiftWebFramework"
-            ReferencedContainer = "container:SwiftWebFramework.xcodeproj">
+            ReferencedContainer = "container:swift-web-framework.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>
